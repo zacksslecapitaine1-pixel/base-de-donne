@@ -315,14 +315,14 @@ function Input({label,value,onChange,type="text",placeholder="",required=false,o
 function Modal({title,subtitle,children,onClose,wide=false}){
   useEffect(()=>{const h=e=>{if(e.key==="Escape")onClose()};window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h)},[onClose]);
   return(
-    <div onClick={onClose} style={{position:"fixed",inset:0,background:"#000000bb",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:"20px",overflowY:"auto"}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:"var(--bg2)",border:"1px solid var(--border2)",borderRadius:"var(--r2)",padding:"24px 28px",width:"100%",maxWidth:wide?800:580,maxHeight:"90vh",overflowY:"auto",animation:"fadeUp .25s ease",scrollBehavior:"smooth"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:22}}>
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"#000000bb",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:"30px 20px",overflowY:"auto",minHeight:"100vh"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"var(--bg2)",border:"1px solid var(--border2)",borderRadius:"var(--r2)",padding:"32px 36px",width:"100%",maxWidth:wide?900:650,maxHeight:"85vh",overflowY:"auto",animation:"fadeUp .25s ease",scrollBehavior:"smooth",flex:1,margin:"auto"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
           <div>
-            <div style={{fontFamily:"var(--font-cond)",fontSize:18,fontWeight:700,color:"var(--text)"}}>{title}</div>
-            {subtitle&&<div style={{fontSize:12,color:"var(--text3)",marginTop:3}}>{subtitle}</div>}
+            <div style={{fontFamily:"var(--font-cond)",fontSize:20,fontWeight:700,color:"var(--text)"}}>{title}</div>
+            {subtitle&&<div style={{fontSize:13,color:"var(--text3)",marginTop:4}}>{subtitle}</div>}
           </div>
-          <button onClick={onClose} style={{background:"none",border:"none",color:"var(--text3)",fontSize:22,cursor:"pointer",lineHeight:1,marginLeft:16,flexShrink:0}}>✕</button>
+          <button onClick={onClose} style={{background:"none",border:"none",color:"var(--text3)",fontSize:24,cursor:"pointer",lineHeight:1,marginLeft:20,flexShrink:0,padding:"0 4px"}}>✕</button>
         </div>
         {children}
       </div>
