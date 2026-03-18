@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CRM Pro — Oumate Razakou</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Barlow+Condensed:wght@500;600;700;800&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07080f;--bg2:#0d0f1e;--bg3:#12152a;--bg4:#1a1f3a;
+  --border:#1f2444;--border2:#2a3060;
+  --cyan:#22d3ee;--cyan-dim:#22d3ee20;
+  --gold:#fbbf24;--gold-dim:#fbbf2420;
+  --green:#34d399;--green-dim:#34d39920;
+  --red:#f43f5e;--red-dim:#f43f5e20;
+  --violet:#a78bfa;--violet-dim:#a78bfa20;
+  --orange:#fb923c;--orange-dim:#fb923c20;
+  --pink:#f472b6;--pink-dim:#f472b620;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#4a5568;
+  --font:'Barlow',sans-serif;--font-cond:'Barlow Condensed',sans-serif;--font-mono:'Source Code Pro',monospace;
+  --r:10px;--r2:14px;
+}
+html,body,#root{height:100%;background:var(--bg);overflow:hidden}
+body{font-family:var(--font);color:var(--text);font-size:14px}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+input,textarea,select{font-family:var(--font);background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:var(--r);padding:9px 13px;font-size:13px;outline:none;transition:border .2s,box-shadow .2s;width:100%}
+input:focus,textarea:focus,select:focus{border-color:var(--cyan);box-shadow:0 0 0 3px var(--cyan-dim)}
+select option{background:var(--bg3)}
+a{color:inherit;text-decoration:none}
+button{font-family:var(--font);cursor:pointer;border:none;outline:none;transition:all .18s}
+canvas{max-width:100%}
+.chart-wrap{position:relative;width:100%;height:220px}
+.chart-wrap-sm{position:relative;width:100%;height:160px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes toast{0%{opacity:0;transform:translateY(20px)}10%{opacity:1;transform:translateY(0)}90%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-10px)}}
+.fade-up{animation:fadeUp .3s ease both}
+.spin{animation:spin 1s linear infinite;display:inline-block}
+@media(max-width:768px){
+  html,body,#root{height:100%;overflow:hidden}
+  .mobile-sidebar{display:none!important}
+  .mobile-main{overflow-y:auto!important;overflow-x:hidden!important;height:auto!important;flex:1;min-height:0}
+  .mobile-content{padding:8px!important;margin-bottom:20px}
+  .mobile-topbar{padding:8px 12px!important;flex-wrap:wrap;gap:4px;font-size:12px}
+  .mobile-kpi-grid{flex-direction:column!important}
+  .mobile-grid-2{grid-template-columns:1fr!important}
+  table{font-size:11px}
+  table td,table th{padding:5px 6px!important}
+  input,textarea,select{padding:6px 10px;font-size:12px}
+  button{padding:8px 12px;font-size:12px}
+}
+.live{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;display:inline-block}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useRef,useMemo}=React;
+ 
+// ═══════════════════════════════════════
+//  CONSTANTS
+// ═══════════════════════════════════════
+const APP_VERSION="4.0.0";
+const SITE_URL="https://zacksslecapitaine1-pixel.github.io/dev.zak/";
+const WHATSAPP="+228 92 10 19 69";
+const EMAIL="zacksslecapitaine.1@gmail.com";
+ 
+const STATUTS={
+  nouveau:    {label:"Nouveau",      color:"#22d3ee",bg:"#22d3ee15",icon:"🔵"},
+  contacte:   {label:"Contacté",     color:"#fbbf24",bg:"#fbbf2415",icon:"📞"},
+  rdv:        {label:"RDV Fixé",     color:"#a78bfa",bg:"#a78bfa15",icon:"📅"},
+  proposition:{label:"Proposition",  color:"#fb923c",bg:"#fb923c15",icon:"📄"},
+  client:     {label:"Client ✓",    color:"#34d399",bg:"#34d39915",icon:"✅"},
+  perdu:      {label:"Perdu",        color:"#f43f5e",bg:"#f43f5e15",icon:"❌"},
+};
+ 
+// Chaque service = objet complet avec sa couleur
+const SERVICES={
+  streaming:{label:"Streaming zack.net.M",color:"#a78bfa",bg:"#a78bfa15",icon:"📺"},
+  site_web: {label:"Site Web",            color:"#22d3ee",bg:"#22d3ee15",icon:"🌐"},
+  agent_ia: {label:"Agent IA",            color:"#34d399",bg:"#34d39915",icon:"🤖"},
+  autre:    {label:"Autre",               color:"#94a3b8",bg:"#94a3b815",icon:"📦"},
+};
+ 
+const TYPES={
+  hotel:      {label:"Hôtel",       icon:"🏨"},
+  residence:  {label:"Résidence",   icon:"🏠"},
+  restaurant: {label:"Restaurant",  icon:"🍽️"},
+  bar:        {label:"Bar",         icon:"🍸"},
+  boutique:   {label:"Boutique",    icon:"🛍️"},
+  cabinet:    {label:"Cabinet",     icon:"💼"},
+  association:{label:"Association", icon:"🤝"},
+  autre:      {label:"Autre",       icon:"🏢"},
+};
+ 
+const STATUTS_PROJET={
+  devis:   {label:"Devis envoyé",color:"#fbbf24"},
+  en_cours:{label:"En cours",    color:"#22d3ee"},
+  livre:   {label:"Livré",       color:"#34d399"},
+  pause:   {label:"En pause",    color:"#fb923c"},
+  annule:  {label:"Annulé",      color:"#f43f5e"},
+};
+ 
+// Statuts de paiement
+const STATUTS_PAIEMENT={
+  paye:    {label:"Payé intégralement",color:"#34d399",bg:"#34d39918",icon:"✅"},
+  partiel: {label:"Acompte versé",     color:"#fbbf24",bg:"#fbbf2418",icon:"⏳"},
+  impaye:  {label:"Non payé",          color:"#f43f5e",bg:"#f43f5e18",icon:"❌"},
+  echeance:{label:"Échéancier",        color:"#22d3ee",bg:"#22d3ee18",icon:"📅"},
+};
+ 
+// ═══════════════════════════════════════
+//  SUPABASE CLOUD LAYER
+// ═══════════════════════════════════════
+const SB={
+  client:null,
+  init(url,key){this.client=supabase.createClient(url,key)},
+  async getAll(t){const{data,error}=await this.client.from(t).select('data').order('updated_at',{ascending:false});if(error)throw error;return(data||[]).map(r=>r.data)},
+  async upsert(t,record){const{error}=await this.client.from(t).upsert({id:record.id,data:record,updated_at:new Date().toISOString()},{onConflict:'id'});if(error)throw error},
+  async remove(t,id){const{error}=await this.client.from(t).delete().eq('id',id);if(error)throw error},
+  async upsertMany(t,records){if(!records.length)return;const{error}=await this.client.from(t).upsert(records.map(r=>({id:r.id,data:r,updated_at:new Date().toISOString()})),{onConflict:'id'});if(error)throw error},
+  async test(){const{error}=await this.client.from('prospects').select('id').limit(1);return!error},
+};
+const CKEY='crm_sb_v4';
+const getCreds=()=>{try{const v=localStorage.getItem(CKEY);return v?JSON.parse(v):null}catch{return null}};
+const saveCreds=(u,k)=>localStorage.setItem(CKEY,JSON.stringify({u,k}));
+const clearCreds=()=>localStorage.removeItem(CKEY);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const today=()=>new Date().toISOString().slice(0,10);
+const fmtFCFA=n=>n>0?(n).toLocaleString("fr-FR")+" FCFA":"—";
+const fmtK=n=>n>=1000?`${(n/1000).toFixed(0)}k`:String(n||0);
+ 
+// normalise services: string legacy -> array
+const normServices=s=>{
+  if(!s)return["site_web"];
+  if(Array.isArray(s))return s.length?s:["site_web"];
+  return[s];
+};
+ 
+// ═══════════════════════════════════════
+//  WHATSAPP GENERATOR (multi-services)
+// ═══════════════════════════════════════
+function genMsg(p){
+  const services=normServices(p.services||p.service);
+  const hasSite=p.siteWeb&&p.siteWebUrl;
+  const typeLabel=TYPES[p.type]?.label?.toLowerCase()||"établissement";
+  const etoiles=p.etoiles>0?` ${p.etoiles}★`:"";
+ 
+  // ── Bloc streaming ──
+  const blockStreaming=`🎬 *Logiciel zack.net.M v3.0* — Netflix, Prime Video & Disney+ sur tous vos téléviseurs :
+✅ Licence unique — zéro abonnement mensuel récurrent
+✅ Compatible Smart TV, Android TV, Fire Stick
+✅ Installation rapide — moins de 30 min par appareil
+✅ Économie estimée : +3 300 000 FCFA sur 15 ans
+✅ Support local + mises à jour garanties
+→ *Démonstration gratuite de 20 min dans vos locaux*`;
+ 
+  // ── Bloc site web ──
+  const menuLine=(p.type==="restaurant"||p.type==="bar")?"\n🍽️ *Menu digital* — consultable sur smartphone, commandes en ligne":"";
+  const blockSiteWeb=hasSite
+    ?`🌐 *Refonte de votre site (${p.siteWebUrl})* — j'ai identifié plusieurs axes d'amélioration :
+✅ Performance & score Google PageSpeed optimisé
+✅ SEO local — position #1 sur "${p.nom} Lomé"
+✅ Conversion — formulaires, appels à l'action efficaces${menuLine}
+✅ Design premium & intégration WhatsApp auto
+→ *Analyse gratuite + devis sans engagement*`
+    :`🌐 *Création de votre site web professionnel* :
+✅ Design moderne adapté à votre image${menuLine}
+✅ Réservation & contact en ligne
+✅ Référencement Google local (SEO)
+✅ 100% mobile
+→ *3 à 5× plus de prises de contact en 3 mois*`;
+ 
+  // ── Bloc agent IA ──
+  const blockIA=`🤖 *Agent IA sur mesure* — votre collaborateur numérique 24h/24 :
+✅ Réponses WhatsApp & Email en moins de 30 secondes
+✅ Gestion automatique des réservations & documents
+✅ Rapports quotidiens envoyés sur votre téléphone
+✅ 4 à 6h de travail répétitif économisé par jour
+→ *Entretien découverte gratuit de 30 min*`;
+ 
+  const blocks=[];
+  if(services.includes("streaming"))blocks.push(blockStreaming);
+  if(services.includes("site_web"))blocks.push(blockSiteWeb);
+  if(services.includes("agent_ia"))blocks.push(blockIA);
+  if(services.includes("autre"))blocks.push(`📦 *Service personnalisé* — discutons de vos besoins spécifiques.`);
+ 
+  const intro=hasSite&&services.includes("site_web")
+    ?`J'ai visité votre site (${p.siteWebUrl}) et j'ai identifié des opportunités d'amélioration importantes pour votre ${typeLabel}.`
+    :`Votre ${typeLabel} *${p.nom}*${etoiles} a une excellente réputation à Lomé — c'est précisément pourquoi je me permets de vous contacter.`;
+ 
+  const multi=blocks.length>1;
+  const offreLabel=multi?`\n\n🎁 *Offre combinée disponible* — plusieurs services ensemble = tarif préférentiel négocié.`:"";
+ 
+  return `Bonjour,\n\nJe me présente : Oumate Razakou, développeur de solutions numériques basé à Lomé (Togo).\n\n${intro}\n\n${multi?"Je vous propose aujourd'hui *"+blocks.length+" solutions complémentaires* :":""}\n\n${blocks.map((b,i)=>multi?`— PROPOSITION ${i+1} —\n${b}`:b).join("\n\n")}${offreLabel}\n\n🌐 Portfolio : ${SITE_URL}\n📲 WhatsApp : ${WHATSAPP}\n\nDans l'attente d'un échange avec vous,\n\nBien cordialement,\n*Oumate Razakou*\nDéveloppeur IA & Solutions Numériques — Lomé, Togo`;
+}
+ 
+// ═══════════════════════════════════════
+//  UI PRIMITIVES
+// ═══════════════════════════════════════
+function Btn({children,onClick,variant="primary",size="md",style={},disabled=false,full=false}){
+  const base={display:"inline-flex",alignItems:"center",justifyContent:"center",gap:6,fontFamily:"var(--font)",fontWeight:600,cursor:disabled?"not-allowed":"pointer",border:"1px solid transparent",borderRadius:"var(--r)",transition:"all .18s",opacity:disabled?.5:1,width:full?"100%":"auto"};
+  const sizes={sm:{padding:"5px 12px",fontSize:12},md:{padding:"8px 16px",fontSize:13},lg:{padding:"11px 22px",fontSize:14}};
+  const variants={
+    primary:{background:"var(--cyan)",color:"#000",borderColor:"var(--cyan)"},
+    secondary:{background:"var(--bg3)",color:"var(--text)",borderColor:"var(--border2)"},
+    danger:{background:"var(--red-dim)",color:"var(--red)",borderColor:"var(--red)30"},
+    success:{background:"var(--green-dim)",color:"var(--green)",borderColor:"var(--green)30"},
+    ghost:{background:"transparent",color:"var(--text2)",borderColor:"var(--border)"},
+    gold:{background:"var(--gold)",color:"#000",borderColor:"var(--gold)"},
+    violet:{background:"var(--violet-dim)",color:"var(--violet)",borderColor:"var(--violet)30"},
+  };
+  return <button disabled={disabled} onClick={onClick} style={{...base,...sizes[size],...variants[variant],...style}}>{children}</button>;
+}
+ 
+// ── Multi-service picker ──
+function ServicePicker({value,onChange}){
+  const selected=normServices(value);
+  const toggle=k=>{
+    const next=selected.includes(k)?selected.filter(s=>s!==k):[...selected,k];
+    onChange(next.length?next:["site_web"]);
+  };
+  return(
+    <div>
+      <div style={{fontSize:11,color:"var(--text3)",marginBottom:6,textTransform:"uppercase",letterSpacing:1,fontFamily:"var(--font-cond)",fontWeight:600}}>
+        Services proposés <span style={{color:"var(--cyan)",fontWeight:400,textTransform:"none",letterSpacing:0}}>(sélection multiple possible)</span>
+      </div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+        {Object.entries(SERVICES).map(([k,s])=>{
+          const on=selected.includes(k);
+          return(
+            <button key={k} onClick={()=>toggle(k)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:"var(--r)",border:`2px solid ${on?s.color:s.color+"40"}`,background:on?s.bg:"transparent",color:on?s.color:"var(--text3)",fontWeight:on?700:500,fontSize:12,cursor:"pointer",transition:"all .15s",fontFamily:"var(--font)"}}>
+              <span>{s.icon}</span>{s.label}
+              {on&&<span style={{background:s.color,color:"#000",borderRadius:"50%",width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800}}>✓</span>}
+            </button>
+          );
+        })}
+      </div>
+      {selected.length>1&&(
+        <div style={{marginTop:8,padding:"7px 12px",background:"var(--gold-dim)",borderRadius:"var(--r)",fontSize:12,color:"var(--gold)",border:"1px solid var(--gold)30"}}>
+          ⚡ <strong>{selected.length} services sélectionnés</strong> — le message WhatsApp combinera automatiquement toutes les propositions.
+        </div>
+      )}
+    </div>
+  );
+}
+ 
+function ServiceBadges({services}){
+  const arr=normServices(services);
+  return(
+    <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+      {arr.map(k=>{
+        const s=SERVICES[k]||SERVICES.autre;
+        return <span key={k} style={{display:"inline-flex",alignItems:"center",gap:3,background:s.bg,color:s.color,borderRadius:6,padding:"2px 8px",fontSize:11,fontWeight:600,whiteSpace:"nowrap"}}>{s.icon} {s.label}</span>;
+      })}
+    </div>
+  );
+}
+ 
+function StatutBadge({statut}){
+  const s=STATUTS[statut]||STATUTS.nouveau;
+  return <span style={{display:"inline-flex",alignItems:"center",gap:4,background:s.bg,color:s.color,borderRadius:6,padding:"2px 9px",fontSize:11,fontWeight:600,whiteSpace:"nowrap"}}>{s.icon} {s.label}</span>;
+}
+ 
+function PaiementBadge({statut}){
+  const s=STATUTS_PAIEMENT[statut]||STATUTS_PAIEMENT.impaye;
+  return <span style={{display:"inline-flex",alignItems:"center",gap:4,background:s.bg,color:s.color,borderRadius:6,padding:"2px 9px",fontSize:11,fontWeight:600,whiteSpace:"nowrap"}}>{s.icon} {s.label}</span>;
+}
+ 
+function KPI({label,value,sub,color="var(--cyan)",icon,small=false}){
+  return(
+    <div style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:"var(--r2)",padding:small?"12px 16px":"18px 20px",flex:1,minWidth:small?110:140,position:"relative",overflow:"hidden"}}>
+      <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:color,opacity:.7}}/>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+        <span style={{fontSize:10,color:"var(--text3)",textTransform:"uppercase",letterSpacing:1.3,fontFamily:"var(--font-cond)",fontWeight:600}}>{label}</span>
+        <span style={{fontSize:small?16:20}}>{icon}</span>
+      </div>
+      <div style={{fontSize:small?20:28,fontWeight:700,color,fontFamily:"var(--font-cond)",letterSpacing:.3}}>{value}</div>
+      {sub&&<div style={{fontSize:10,color:"var(--text3)",marginTop:2}}>{sub}</div>}
+    </div>
+  );
+}
+ 
+function Input({label,value,onChange,type="text",placeholder="",required=false,options=null,rows=0,note=""}){
+  const id=useRef("i_"+uid()).current;
+  const el=options?(
+    <select id={id} value={value} onChange={e=>onChange(e.target.value)}>
+      {options.map(o=><option key={o.value||o} value={o.value||o}>{o.label||o}</option>)}
+    </select>
+  ):rows>0?(
+    <textarea id={id} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows} style={{resize:"vertical",lineHeight:1.6}}/>
+  ):(
+    <input id={id} type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}/>
+  );
+  return(
+    <div style={{marginBottom:14}}>
+      {label&&<label htmlFor={id} style={{display:"block",fontSize:11,color:"var(--text3)",marginBottom:5,textTransform:"uppercase",letterSpacing:1,fontFamily:"var(--font-cond)",fontWeight:600}}>{label}{required&&<span style={{color:"var(--red)",marginLeft:3}}>*</span>}</label>}
+      {el}
+      {note&&<div style={{fontSize:11,color:"var(--text3)",marginTop:4,fontStyle:"italic"}}>{note}</div>}
+    </div>
+  );
+}
+ 
+function Modal({title,subtitle,children,onClose,wide=false}){
+  useEffect(()=>{const h=e=>{if(e.key==="Escape")onClose()};window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h)},[onClose]);
+  return(
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"#000000bb",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:"20px",overflowY:"auto"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"var(--bg2)",border:"1px solid var(--border2)",borderRadius:"var(--r2)",padding:"24px 28px",width:"100%",maxWidth:wide?800:580,maxHeight:"90vh",overflowY:"auto",animation:"fadeUp .25s ease",scrollBehavior:"smooth"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:22}}>
+          <div>
+            <div style={{fontFamily:"var(--font-cond)",fontSize:18,fontWeight:700,color:"var(--text)"}}>{title}</div>
+            {subtitle&&<div style={{fontSize:12,color:"var(--text3)",marginTop:3}}>{subtitle}</div>}
+          </div>
+          <button onClick={onClose} style={{background:"none",border:"none",color:"var(--text3)",fontSize:22,cursor:"pointer",lineHeight:1,marginLeft:16,flexShrink:0}}>✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+ 
+function Toast({toasts}){
+  return(
+    <div style={{position:"fixed",bottom:24,right:24,zIndex:999,display:"flex",flexDirection:"column",gap:8,pointerEvents:"none"}}>
+      {toasts.map(t=>(
+        <div key={t.id} style={{background:t.type==="error"?"var(--red)":t.type==="warn"?"var(--gold)":"var(--green)",color:"#fff",padding:"10px 18px",borderRadius:"var(--r)",fontWeight:600,fontSize:13,boxShadow:"0 8px 32px #00000060",animation:"toast 3.5s ease both",maxWidth:340}}>
+          {t.msg}
+        </div>
+      ))}
+    </div>
+  );
+}
+ 
+function Empty({icon="📭",msg="Aucune donnée",sub=""}){
+  return(
+    <div style={{textAlign:"center",padding:"60px 20px",color:"var(--text3)"}}>
+      <div style={{fontSize:46,marginBottom:12}}>{icon}</div>
+      <div style={{fontFamily:"var(--font-cond)",fontSize:18,fontWeight:600,color:"var(--text2)",marginBottom:6}}>{msg}</div>
+      {sub&&<div style={{fontSize:13}}>{sub}</div>}
+    </div>
+  );
+}
+ 
+function ConfirmModal({title,msg,onConfirm,onClose}){
+  return(
+    <Modal title={title} onClose={onClose}>
+      <div style={{fontSize:14,color:"var(--text2)",marginBottom:20,lineHeight:1.6}}>{msg}</div>
+      <div style={{display:"flex",gap:10}}>
+        <Btn variant="ghost" onClick={onClose} full>Annuler</Btn>
+        <Btn variant="danger" onClick={onConfirm} full>Confirmer la suppression</Btn>
+      </div>
+    </Modal>
+  );
+}
+ 
+// ═══════════════════════════════════════
+//  CHART WRAPPERS
+// ═══════════════════════════════════════
+function BarChart({data,labels,colors,small=false}){
+  const ref=useRef();const chart=useRef();
+  useEffect(()=>{
+    if(!ref.current)return;
+    if(chart.current)chart.current.destroy();
+    chart.current=new Chart(ref.current,{
+      type:"bar",
+      data:{labels,datasets:data.map((d,i)=>({label:d.label,data:d.values,backgroundColor:colors[i]+"99",borderColor:colors[i],borderWidth:1.5,borderRadius:4}))},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#94a3b8",font:{family:"'Barlow',sans-serif",size:11}}}},scales:{x:{ticks:{color:"#94a3b8",font:{size:11}},grid:{color:"#1a1f3a"}},y:{ticks:{color:"#94a3b8",font:{size:11}},grid:{color:"#1a1f3a"}}}},
+    });
+    return()=>{if(chart.current)chart.current.destroy()};
+  },[JSON.stringify({data,labels})]);
+  return <div className={small?"chart-wrap-sm":"chart-wrap"}><canvas ref={ref}/></div>;
+}
+ 
+function DoughnutChart({data,labels,colors}){
+  const ref=useRef();const chart=useRef();
+  useEffect(()=>{
+    if(!ref.current)return;
+    if(chart.current)chart.current.destroy();
+    chart.current=new Chart(ref.current,{
+      type:"doughnut",
+      data:{labels,datasets:[{data,backgroundColor:colors.map(c=>c+"cc"),borderColor:colors,borderWidth:2,hoverOffset:6}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:"65%",plugins:{legend:{position:"bottom",labels:{color:"#94a3b8",font:{family:"'Barlow',sans-serif",size:11},padding:12}}}},
+    });
+    return()=>{if(chart.current)chart.current.destroy()};
+  },[JSON.stringify({data,labels})]);
+  return <div className="chart-wrap"><canvas ref={ref}/></div>;
+}
+ 
+// ═══════════════════════════════════════
+//  PROSPECT FORM
+// ═══════════════════════════════════════
+const EMPTY_PROSPECT={nom:"",type:"restaurant",tel:"",email:"",ville:"Lomé",siteWeb:false,siteWebUrl:"",etoiles:0,services:["site_web"],statut:"nouveau",notes:"",dateAjout:today(),dateContact:"",dateRdv:"",source:""};
+ 
+function ProspectModal({prospect,onSave,onClose}){
+  const [p,setP]=useState(()=>({...EMPTY_PROSPECT,...prospect,services:normServices(prospect?.services||prospect?.service)}));
+  const set=(k,v)=>setP(prev=>({...prev,[k]:v}));
+  const isNew=!prospect?.id;
+  return(
+    <Modal title={isNew?"➕ Nouveau Prospect":"✏️ Modifier le Prospect"} subtitle={p.nom} onClose={onClose} wide>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px"}}>
+        <div style={{gridColumn:"1/-1"}}><Input label="Nom de l'établissement" value={p.nom} onChange={v=>set("nom",v)} required placeholder="Ex: Hôtel Sarakawa..."/></div>
+        <Input label="Type" value={p.type} onChange={v=>set("type",v)} options={Object.entries(TYPES).map(([k,v])=>({value:k,label:v.icon+" "+v.label}))}/>
+        <Input label="Statut" value={p.statut} onChange={v=>set("statut",v)} options={Object.entries(STATUTS).map(([k,v])=>({value:k,label:v.icon+" "+v.label}))}/>
+        <Input label="Téléphone" value={p.tel} onChange={v=>set("tel",v)} placeholder="+228 XX XX XX XX" required/>
+        <Input label="Email" value={p.email||""} onChange={v=>set("email",v)} type="email" placeholder="contact@..."/>
+        <Input label="Ville" value={p.ville||""} onChange={v=>set("ville",v)} placeholder="Lomé"/>
+        <Input label="Étoiles (hôtel/résidence)" value={p.etoiles||0} onChange={v=>set("etoiles",parseInt(v)||0)} type="number" placeholder="0"/>
+        <div style={{gridColumn:"1/-1"}}><Input label="URL site web (laisser vide si aucun)" value={p.siteWebUrl||""} onChange={v=>{set("siteWebUrl",v);set("siteWeb",v.length>0)}} placeholder="https://..."/></div>
+        <div style={{gridColumn:"1/-1",marginBottom:14}}>
+          <ServicePicker value={p.services} onChange={v=>set("services",v)}/>
+        </div>
+        <Input label="Source (comment trouvé ?)" value={p.source||""} onChange={v=>set("source",v)} placeholder="Google Maps, recommandation..."/>
+        <Input label="Date de contact" value={p.dateContact||""} onChange={v=>set("dateContact",v)} type="date"/>
+        <Input label="Date RDV" value={p.dateRdv||""} onChange={v=>set("dateRdv",v)} type="date"/>
+        <div style={{gridColumn:"1/-1"}}><Input label="Notes" value={p.notes||""} onChange={v=>set("notes",v)} placeholder="Informations utiles..." rows={3}/></div>
+      </div>
+      <div style={{display:"flex",gap:10,marginTop:4}}>
+        <Btn variant="ghost" onClick={onClose} full>Annuler</Btn>
+        <Btn variant="primary" disabled={!p.nom.trim()||!p.tel.trim()} onClick={()=>onSave({...p,id:p.id||uid()})} full>
+          {isNew?"✓ Ajouter ce Prospect":"✓ Enregistrer les modifications"}
+        </Btn>
+      </div>
+    </Modal>
+  );
+}
+ 
+// ═══════════════════════════════════════
+//  MESSAGE MODAL
+// ═══════════════════════════════════════
+function MsgModal({prospect,onClose,onSent}){
+  const [msg,setMsg]=useState(()=>genMsg(prospect));
+  const [copied,setCopied]=useState(false);
+  const services=normServices(prospect.services||prospect.service);
+  const copy=()=>{navigator.clipboard.writeText(msg);setCopied(true);setTimeout(()=>setCopied(false),2500)};
+  const wa=()=>{const n=prospect.tel.replace(/\s+/g,"").replace("+","");window.open(`https://wa.me/${n}?text=${encodeURIComponent(msg)}`,"_blank");if(onSent)onSent();};
+  const copyAndMark=()=>{navigator.clipboard.writeText(msg);setCopied(true);setTimeout(()=>setCopied(false),2500);if(onSent)onSent();};
+  return(
+    <Modal title="💬 Message WhatsApp" subtitle={`${prospect.nom} · ${prospect.tel}`} onClose={onClose} wide>
+      {services.length>1&&(
+        <div style={{background:"var(--gold-dim)",border:"1px solid var(--gold)30",borderRadius:"var(--r)",padding:"10px 14px",marginBottom:12,fontSize:12,color:"var(--gold)",display:"flex",gap:8,alignItems:"center"}}>
+          ⚡ Message combinant <strong>{services.length} propositions</strong> : {services.map(k=>SERVICES[k]?.label).join(", ")}
+        </div>
+      )}
+      <div style={{background:"var(--bg3)",borderRadius:"var(--r)",border:"1px solid var(--border)",marginBottom:14}}>
+        <textarea value={msg} onChange={e=>setMsg(e.target.value)} rows={15} style={{border:"none",background:"transparent",padding:16,lineHeight:1.7,fontSize:12,resize:"vertical",width:"100%",outline:"none",fontFamily:"var(--font)"}}/>
+      </div>
+      <div style={{display:"flex",gap:10}}>
+        <Btn variant="secondary" onClick={copyAndMark} style={{flex:1}}>{copied?"✅ Copié !":"📋 Copier"}</Btn>
+        <Btn variant="success" onClick={wa} style={{flex:2}}>💬 Ouvrir WhatsApp & Envoyer →</Btn>
+      </div>
+    </Modal>
+  );
+}
+ 
+// ═══════════════════════════════════════
+//  IMPORT MODAL
+// ═══════════════════════════════════════
+function ImportModal({onImport,onClose}){
+  const [step,setStep]=useState(1);
+  const [rows,setRows]=useState([]);
+  const [headers,setHeaders]=useState([]);
+  const [mapping,setMapping]=useState({});
+  const [preview,setPreview]=useState([]);
+  const [error,setError]=useState("");
+  const fileRef=useRef(null);
+ 
+  const FIELDS=[
+    {key:"nom",label:"Nom établissement",required:true},
+    {key:"tel",label:"Téléphone",required:true},
+    {key:"type",label:"Type"},
+    {key:"email",label:"Email"},
+    {key:"ville",label:"Ville"},
+    {key:"siteWebUrl",label:"URL site web"},
+    {key:"etoiles",label:"Étoiles"},
+    {key:"statut",label:"Statut"},
+    {key:"notes",label:"Notes"},
+    {key:"dateRdv",label:"Date RDV"},
+    {key:"source",label:"Source"},
+  ];
+ 
+  const autoMap=hdrs=>{
+    const aliases={nom:["nom","name","établissement","etablissement"],tel:["tel","téléphone","telephone","phone","mobile"],email:["email","mail"],ville:["ville","city"],siteWebUrl:["site","url","website","web"],etoiles:["étoiles","etoiles","stars"],type:["type","catégorie"],statut:["statut","status"],notes:["notes","note","commentaire"]};
+    const mp={};
+    for(const[field,keys]of Object.entries(aliases)){for(const h of hdrs){if(keys.some(k=>h.toLowerCase().includes(k))){mp[field]=h;break}}}
+    setMapping(mp);
+  };
+ 
+  const handleFile=e=>{
+    setError("");
+    const file=e.target.files[0];if(!file)return;
+    const ext=file.name.split(".").pop().toLowerCase();
+    if(ext==="csv"){
+      Papa.parse(file,{header:true,skipEmptyLines:true,complete:res=>{setHeaders(Object.keys(res.data[0]||{}));setRows(res.data);autoMap(Object.keys(res.data[0]||{}));setStep(2)},error:err=>setError(err.message)});
+    }else if(ext==="xlsx"||ext==="xls"){
+      const reader=new FileReader();
+      reader.onload=ev=>{try{const wb=XLSX.read(ev.target.result,{type:"array"});const ws=wb.Sheets[wb.SheetNames[0]];const data=XLSX.utils.sheet_to_json(ws,{defval:""});const h=Object.keys(data[0]||{});setHeaders(h);setRows(data);autoMap(h);setStep(2)}catch{setError("Erreur lecture Excel")}};
+      reader.readAsArrayBuffer(file);
+    }else{setError("Format non supporté (.xlsx, .xls, .csv)");}
+  };
+ 
+  const buildRow=row=>{
+    const p={...EMPTY_PROSPECT,id:uid(),dateAjout:today()};
+    for(const[field,col]of Object.entries(mapping)){
+      if(col&&row[col]!==undefined){
+        let v=String(row[col]).trim();
+        if(field==="etoiles")v=parseInt(v)||0;
+        if(field==="siteWebUrl"){p.siteWeb=v.length>0}
+        p[field]=v;
+      }
+    }
+    return p;
+  };
+ 
+  return(
+    <Modal title="📥 Importer des Prospects" subtitle="Excel (.xlsx/.xls) ou CSV" onClose={onClose} wide>
+      <div style={{display:"flex",gap:0,marginBottom:24}}>
+        {["Fichier","Mapping","Aperçu"].map((s,i)=>(
+          <div key={i} style={{flex:1,textAlign:"center",padding:"8px 0",fontSize:12,fontWeight:600,borderBottom:`2px solid ${step>i?"var(--cyan)":"var(--border)"}`,color:step>i?"var(--cyan)":"var(--text3)"}}>
+            <span style={{background:step>i?"var(--cyan)":"var(--border)",color:step>i?"#000":"var(--text3)",borderRadius:"50%",width:20,height:20,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,marginRight:6}}>{i+1}</span>{s}
+          </div>
+        ))}
+      </div>
+ 
+      {step===1&&(
+        <div>
+          <div style={{border:"2px dashed var(--border2)",borderRadius:"var(--r2)",padding:40,textAlign:"center",marginBottom:16,background:"var(--bg3)"}}>
+            <div style={{fontSize:40,marginBottom:10}}>📁</div>
+            <div style={{fontFamily:"var(--font-cond)",fontSize:16,fontWeight:600,marginBottom:6}}>Glissez votre fichier ou cliquez</div>
+            <div style={{fontSize:12,color:"var(--text3)",marginBottom:18}}>Formats : .xlsx, .xls, .csv</div>
+            <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} ref={fileRef} style={{display:"none"}}/>
+            <Btn variant="primary" onClick={()=>{console.log("fileRef:",fileRef.current);if(fileRef.current){fileRef.current.click()}}}>📂 Choisir un fichier</Btn>
+          </div>
+          {error&&<div style={{background:"var(--red-dim)",color:"var(--red)",padding:"10px 14px",borderRadius:"var(--r)",fontSize:13,marginBottom:10}}>{error}</div>}
+          <div style={{background:"var(--cyan-dim)",borderRadius:"var(--r)",padding:"10px 14px",fontSize:12,color:"var(--cyan)"}}>
+            💡 La première ligne doit contenir les en-têtes. Le mapping sera automatique si les noms correspondent.
+          </div>
+        </div>
+      )}
+ 
+      {step===2&&(
+        <div>
+          <div style={{marginBottom:12,fontSize:13,color:"var(--text2)"}}><strong style={{color:"var(--cyan)"}}>{rows.length}</strong> lignes détectées. Associez vos colonnes :</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px 20px",marginBottom:20}}>
+            {FIELDS.map(f=>(
+              <div key={f.key}>
+                <label style={{display:"block",fontSize:11,color:f.required?"var(--gold)":"var(--text3)",marginBottom:4,fontFamily:"var(--font-cond)",fontWeight:600,textTransform:"uppercase",letterSpacing:.8}}>{f.label}{f.required&&" *"}</label>
+                <select value={mapping[f.key]||""} onChange={e=>setMapping(prev=>({...prev,[f.key]:e.target.value}))} style={{fontSize:12,padding:"7px 10px"}}>
+                  <option value="">(ignorer)</option>
+                  {headers.map(h=><option key={h} value={h}>{h}</option>)}
+                </select>
+              </div>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <Btn variant="ghost" onClick={()=>setStep(1)} full>← Retour</Btn>
+            <Btn variant="primary" disabled={!mapping.nom||!mapping.tel} onClick={()=>{setPreview(rows.slice(0,3).map(buildRow));setStep(3)}} full>Aperçu →</Btn>
+          </div>
+        </div>
+      )}
+ 
+      {step===3&&(
+        <div>
+          <div style={{marginBottom:12,fontSize:13,color:"var(--text2)"}}>Aperçu des 3 premiers prospects :</div>
+          {preview.map((p,i)=>(
+            <div key={i} style={{background:"var(--bg3)",borderRadius:"var(--r)",padding:"12px 16px",marginBottom:8,border:"1px solid var(--border)"}}>
+              <div style={{fontWeight:600,marginBottom:4}}>{TYPES[p.type]?.icon} {p.nom}</div>
+              <div style={{fontSize:12,color:"var(--text3)",fontFamily:"var(--font-mono)"}}>{p.tel} · {p.ville}</div>
+            </div>
+          ))}
+          <div style={{background:"var(--gold-dim)",borderRadius:"var(--r)",padding:"10px 14px",marginBottom:16,fontSize:13,color:"var(--gold)"}}>
+            ⚠️ <strong>{rows.length} prospects</strong> vont être importés.
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <Btn variant="ghost" onClick={()=>setStep(2)} full>← Retour</Btn>
+            <Btn variant="gold" onClick={()=>onImport(rows.map(buildRow).filter(p=>p.nom))} full>✅ Importer {rows.length} prospects</Btn>
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
+}
+ 
+// ═══════════════════════════════════════
+//  PROJECT FORM
+// ═══════════════════════════════════════
+const EMPTY_PROJET={client:"",services:["site_web"],statut:"en_cours",budget:0,paye:0,debut:today(),fin:"",description:"",notes:""};
+ 
+function ProjetModal({projet,onSave,onClose}){
+  const [p,setP]=useState(()=>({...EMPTY_PROJET,...projet,services:normServices(projet?.services||projet?.service)}));
+  const set=(k,v)=>setP(prev=>({...prev,[k]:v}));
+  return(
+    <Modal title={!projet?.id?"➕ Nouveau Projet":"✏️ Modifier le Projet"} subtitle={p.client} onClose={onClose}>
+      <Input label="Client" value={p.client} onChange={v=>set("client",v)} required placeholder="Nom du client..."/>
+      <div style={{marginBottom:14}}><ServicePicker value={p.services} onChange={v=>set("services",v)}/></div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px"}}>
+        <Input label="Statut" value={p.statut} onChange={v=>set("statut",v)} options={Object.entries(STATUTS_PROJET).map(([k,v])=>({value:k,label:v.label}))}/>
+        <Input label="Budget total (FCFA)" value={p.budget} onChange={v=>set("budget",parseInt(v)||0)} type="number"/>
+        <Input label="Montant perçu (FCFA)" value={p.paye} onChange={v=>set("paye",parseInt(v)||0)} type="number"/>
+        <Input label="Restant dû (FCFA)" value={Math.max(0,(p.budget||0)-(p.paye||0))} onChange={()=>{}} note="Calculé automatiquement"/>
+        <Input label="Date début" value={p.debut} onChange={v=>set("debut",v)} type="date"/>
+        <Input label="Date livraison prévue" value={p.fin||""} onChange={v=>set("fin",v)} type="date"/>
+      </div>
+      <Input label="Description" value={p.description||""} onChange={v=>set("description",v)} placeholder="Détails du projet..."/>
+      <Input label="Notes internes" value={p.notes||""} onChange={v=>set("notes",v)} rows={2}/>
+      <div style={{display:"flex",gap:10,marginTop:4}}>
+        <Btn variant="ghost" onClick={onClose} full>Annuler</Btn>
+        <Btn variant="primary" disabled={!p.client.trim()} onClick={()=>onSave({...p,id:p.id||uid()})} full>{!projet?.id?"✓ Créer":"✓ Enregistrer"}</Btn>
+      </div>
+    </Modal>
+  );
+}
+ 
+// ═══════════════════════════════════════
+//  PAYMENT FORM
+// ═══════════════════════════════════════
+const EMPTY_PAI={client:"",typeService:"site_web",montantTotal:0,acompteVerse:0,versements:[],statutPaiement:"impaye",dateFacture:today(),dateEcheance:"",notes:"",devise:"FCFA"};
+ 
+function PaiementModal({paiement,onSave,onClose}){
+  const [p,setP]=useState(()=>({...EMPTY_PAI,...paiement}));
+  const [newVers,setNewVers]=useState({montant:0,date:today(),note:""});
+  const set=(k,v)=>setP(prev=>({...prev,[k]:v}));
+ 
+  const totalVerse=(p.acompteVerse||0)+p.versements.reduce((a,v)=>a+(v.montant||0),0);
+  const resteAPayer=Math.max(0,(p.montantTotal||0)-totalVerse);
+  const pct=p.montantTotal>0?Math.round((totalVerse/p.montantTotal)*100):0;
+ 
+  const addVers=()=>{
+    if(!newVers.montant)return;
+    set("versements",[...p.versements,{...newVers,id:uid()}]);
+    setNewVers({montant:0,date:today(),note:""});
+  };
+  const delVers=id=>set("versements",p.versements.filter(v=>v.id!==id));
+ 
+  // Auto statut
+  const autoStatut=()=>{
+    if(resteAPayer<=0)return"paye";
+    if(totalVerse>0)return"partiel";
+    return"impaye";
+  };
+ 
+  return(
+    <Modal title={!paiement?.id?"➕ Nouveau Suivi Paiement":"✏️ Modifier le Paiement"} subtitle={p.client} onClose={onClose} wide>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px"}}>
+        <div style={{gridColumn:"1/-1"}}><Input label="Client / Nom de l'établissement" value={p.client} onChange={v=>set("client",v)} required placeholder="Nom..."/></div>
+        <Input label="Type de service" value={p.typeService} onChange={v=>set("typeService",v)} options={[...Object.entries(SERVICES).map(([k,s])=>({value:k,label:s.icon+" "+s.label})),{value:"multiple",label:"⚡ Multiple"}]}/>
+        <Input label="Statut paiement" value={p.statutPaiement} onChange={v=>set("statutPaiement",v)} options={Object.entries(STATUTS_PAIEMENT).map(([k,s])=>({value:k,label:s.icon+" "+s.label}))}/>
+        <Input label="Montant total facturé (FCFA)" value={p.montantTotal} onChange={v=>set("montantTotal",parseInt(v)||0)} type="number" required/>
+        <Input label="Acompte initial versé (FCFA)" value={p.acompteVerse} onChange={v=>set("acompteVerse",parseInt(v)||0)} type="number"/>
+        <Input label="Date de facture" value={p.dateFacture||""} onChange={v=>set("dateFacture",v)} type="date"/>
+        <Input label="Date d'échéance" value={p.dateEcheance||""} onChange={v=>set("dateEcheance",v)} type="date"/>
+      </div>
+ 
+      {/* Barre de progression */}
+      <div style={{background:"var(--bg3)",borderRadius:"var(--r)",padding:"14px 16px",marginBottom:14,border:"1px solid var(--border)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:8,fontSize:13}}>
+          <span style={{color:"var(--text3)"}}>Progression du paiement</span>
+          <span style={{fontFamily:"var(--font-mono)",fontWeight:700,color:pct===100?"var(--green)":"var(--gold)"}}>{pct}%</span>
+        </div>
+        <div style={{height:8,background:"var(--bg4)",borderRadius:4,overflow:"hidden",marginBottom:10}}>
+          <div style={{width:`${pct}%`,height:"100%",background:pct===100?"var(--green)":pct>50?"var(--gold)":"var(--orange)",borderRadius:4,transition:"width .4s"}}/>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+          {[["Total facturé",p.montantTotal,"var(--text2)"],["Total reçu",totalVerse,"var(--green)"],["Restant dû",resteAPayer,resteAPayer>0?"var(--red)":"var(--green)"]].map(([l,v,c])=>(
+            <div key={l} style={{textAlign:"center"}}>
+              <div style={{fontSize:10,color:"var(--text3)",marginBottom:2,fontFamily:"var(--font-cond)",textTransform:"uppercase",letterSpacing:.8}}>{l}</div>
+              <div style={{fontWeight:700,color:c,fontFamily:"var(--font-mono)",fontSize:13}}>{(v||0).toLocaleString("fr-FR")} FCFA</div>
+            </div>
+          ))}
+        </div>
+      </div>
+ 
+      {/* Versements additionnels */}
+      <div style={{marginBottom:14}}>
+        <div style={{fontSize:11,color:"var(--text3)",marginBottom:8,textTransform:"uppercase",letterSpacing:1,fontFamily:"var(--font-cond)",fontWeight:600}}>Versements additionnels ({p.versements.length})</div>
+        {p.versements.map(v=>(
+          <div key={v.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"var(--bg3)",borderRadius:"var(--r)",marginBottom:6,border:"1px solid var(--border)"}}>
+            <span style={{color:"var(--green)",fontFamily:"var(--font-mono)",fontWeight:600,fontSize:13,flex:1}}>{(v.montant).toLocaleString("fr-FR")} FCFA</span>
+            <span style={{fontSize:11,color:"var(--text3)",fontFamily:"var(--font-mono)"}}>{v.date}</span>
+            {v.note&&<span style={{fontSize:11,color:"var(--text3)",fontStyle:"italic",flex:2}}>{v.note}</span>}
+            <Btn variant="danger" size="sm" onClick={()=>delVers(v.id)} style={{padding:"3px 8px"}}>✕</Btn>
+          </div>
+        ))}
+        {/* Ajout versement */}
+        <div style={{display:"flex",gap:8,alignItems:"flex-end",padding:"10px 12px",background:"var(--green-dim)",borderRadius:"var(--r)",border:"1px solid var(--green)30",marginTop:8}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:10,color:"var(--green)",marginBottom:4,fontFamily:"var(--font-cond)",fontWeight:600,textTransform:"uppercase",letterSpacing:.8}}>Montant</div>
+            <input type="number" value={newVers.montant||""} onChange={e=>setNewVers(prev=>({...prev,montant:parseInt(e.target.value)||0}))} placeholder="0" style={{padding:"7px 10px",fontSize:12}}/>
+          </div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:10,color:"var(--green)",marginBottom:4,fontFamily:"var(--font-cond)",fontWeight:600,textTransform:"uppercase",letterSpacing:.8}}>Date</div>
+            <input type="date" value={newVers.date} onChange={e=>setNewVers(prev=>({...prev,date:e.target.value}))} style={{padding:"7px 10px",fontSize:12}}/>
+          </div>
+          <div style={{flex:2}}>
+            <div style={{fontSize:10,color:"var(--green)",marginBottom:4,fontFamily:"var(--font-cond)",fontWeight:600,textTransform:"uppercase",letterSpacing:.8}}>Note (optionnel)</div>
+            <input type="text" value={newVers.note} onChange={e=>setNewVers(prev=>({...prev,note:e.target.value}))} placeholder="Ex: 2ème tranche..." style={{padding:"7px 10px",fontSize:12}}/>
+          </div>
+          <Btn variant="success" onClick={addVers} disabled={!newVers.montant}>+ Ajouter</Btn>
+        </div>
+      </div>
+ 
+      <Input label="Notes internes" value={p.notes||""} onChange={v=>set("notes",v)} rows={2} placeholder="Remarques sur ce paiement..."/>
+ 
+      <div style={{display:"flex",gap:10,marginTop:4}}>
+        <Btn variant="ghost" onClick={onClose} full>Annuler</Btn>
+        <Btn variant="primary" disabled={!p.client.trim()||!p.montantTotal} onClick={()=>onSave({...p,id:p.id||uid(),statutPaiement:autoStatut(),totalVerse,resteAPayer})} full>
+          {!paiement?.id?"✓ Créer":"✓ Enregistrer"}
+        </Btn>
+      </div>
+    </Modal>
+  );
+}
+ 
+// ═══════════════════════════════════════
+//  REVENUE MODAL
+// ═══════════════════════════════════════
+function RevenuModal({revenu,onSave,onClose}){
+  const [r,setR]=useState(revenu||{mois:new Date().toISOString().slice(0,7),site_web:0,streaming:0,agent_ia:0,autre:0,notes:""});
+  const set=(k,v)=>setR(prev=>({...prev,[k]:v}));
+  const total=(parseInt(r.site_web)||0)+(parseInt(r.streaming)||0)+(parseInt(r.agent_ia)||0)+(parseInt(r.autre)||0);
+  return(
+    <Modal title={!revenu?.id?"➕ Ajouter un mois":"✏️ Modifier les revenus"} onClose={onClose}>
+      <Input label="Mois" value={r.mois} onChange={v=>set("mois",v)} type="month" required/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px"}}>
+        <Input label="🌐 Site Web (FCFA)" value={r.site_web||0} onChange={v=>set("site_web",parseInt(v)||0)} type="number"/>
+        <Input label="📺 Streaming (FCFA)" value={r.streaming||0} onChange={v=>set("streaming",parseInt(v)||0)} type="number"/>
+        <Input label="🤖 Agent IA (FCFA)" value={r.agent_ia||0} onChange={v=>set("agent_ia",parseInt(v)||0)} type="number"/>
+        <Input label="📦 Autre (FCFA)" value={r.autre||0} onChange={v=>set("autre",parseInt(v)||0)} type="number"/>
+      </div>
+      <div style={{background:"var(--green-dim)",borderRadius:"var(--r)",padding:"12px 16px",marginBottom:14,display:"flex",justifyContent:"space-between"}}>
+        <span style={{color:"var(--green)",fontWeight:600}}>Total du mois</span>
+        <span style={{color:"var(--green)",fontWeight:700,fontFamily:"var(--font-mono)"}}>{total.toLocaleString("fr-FR")} FCFA</span>
+      </div>
+      <Input label="Notes" value={r.notes||""} onChange={v=>set("notes",v)} rows={2}/>
+      <div style={{display:"flex",gap:10,marginTop:4}}>
+        <Btn variant="ghost" onClick={onClose} full>Annuler</Btn>
+        <Btn variant="primary" disabled={!r.mois} onClick={()=>onSave({...r,id:r.id||uid(),total})} full>✓ Enregistrer</Btn>
+      </div>
+    </Modal>
+  );
+}
+ 
+// ═══════════════════════════════════════
+//  TAB: DASHBOARD
+// ═══════════════════════════════════════
+function TabDashboard({prospects,projets,revenus,paiements,setTab,isMobile=false}){
+  const totalRev=revenus.reduce((a,b)=>a+(b.total||0),0);
+  const pipeline=prospects.filter(p=>!["perdu","client"].includes(p.statut)).length;
+  const clients=prospects.filter(p=>p.statut==="client").length;
+  const rdvs=prospects.filter(p=>p.statut==="rdv");
+  const projetsActifs=projets.filter(p=>p.statut==="en_cours");
+ 
+  // Paiements KPIs
+  const totalFacture=paiements.reduce((a,p)=>a+(p.montantTotal||0),0);
+  const totalRecu=paiements.reduce((a,p)=>a+(p.totalVerse||p.acompteVerse||0),0);
+  const totalRestant=paiements.reduce((a,p)=>a+(p.resteAPayer||Math.max(0,(p.montantTotal||0)-(p.totalVerse||p.acompteVerse||0))),0);
+  const impayesCount=paiements.filter(p=>p.statutPaiement==="impaye"||p.statutPaiement==="partiel").length;
+ 
+  const last6=[...revenus].sort((a,b)=>a.mois<b.mois?1:-1).slice(0,6).reverse();
+  const revLabels=last6.map(r=>{if(!r.mois)return"";const[y,m]=r.mois.split("-");const nm=["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];return(nm[parseInt(m)-1]||m)+" "+y?.slice(2)});
+ 
+  return(
+    <div className="fade-up">
+      <div style={{display:"flex",gap:isMobile?8:12,flexWrap:"wrap",marginBottom:16}}>
+        <KPI label="Revenus cumulés" value={totalRev>0?`${fmtK(totalRev)} FCFA`:"—"} color="var(--green)" icon="💰"/>
+        <KPI label="Pipeline actif" value={pipeline} sub="prospects en cours" color="var(--cyan)" icon="🎯"/>
+        <KPI label="Clients convertis" value={clients} color="var(--green)" icon="✅"/>
+        <KPI label="RDV à venir" value={rdvs.length} color="var(--violet)" icon="📅"/>
+        <KPI label="Projets actifs" value={projetsActifs.length} color="var(--gold)" icon="💼"/>
+      </div>
+ 
+      {/* Paiements alerte */}
+      {(impayesCount>0||totalRestant>0)&&(
+        <div style={{background:"var(--red-dim)",border:"1px solid var(--red)30",borderRadius:"var(--r2)",padding:"14px 20px",marginBottom:16,display:"flex",gap:20,flexWrap:"wrap",alignItems:"center",cursor:"pointer"}} onClick={()=>setTab("paiements")}>
+          <span style={{fontSize:20}}>⚠️</span>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:700,color:"var(--red)",fontFamily:"var(--font-cond)",fontSize:15}}>{impayesCount} paiement(s) en attente — {fmtK(totalRestant)} FCFA restant à encaisser</div>
+            <div style={{fontSize:12,color:"var(--text3)",marginTop:2}}>Cliquez pour voir le détail des paiements</div>
+          </div>
+          <Btn variant="danger" size="sm" onClick={()=>setTab("paiements")}>Voir →</Btn>
+        </div>
+      )}
+ 
+      <div style={{display:"flex",gap:isMobile?8:12,flexWrap:"wrap",marginBottom:16}}>
+        <KPI label="Total facturé" value={fmtK(totalFacture)} sub="FCFA" color="var(--text2)" icon="📄" small/>
+        <KPI label="Total encaissé" value={fmtK(totalRecu)} sub="FCFA" color="var(--green)" icon="✅" small/>
+        <KPI label="Restant à recevoir" value={fmtK(totalRestant)} sub="FCFA" color={totalRestant>0?"var(--red)":"var(--green)"} icon="⏳" small/>
+        <KPI label="Taux encaissement" value={totalFacture>0?`${Math.round((totalRecu/totalFacture)*100)}%`:"—"} color="var(--cyan)" icon="📊" small/>
+      </div>
+ 
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:16,marginBottom:16}}>
+        <div style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:"var(--r2)",padding:20}}>
+          <div style={{fontFamily:"var(--font-cond)",fontWeight:700,fontSize:15,marginBottom:14}}>🎯 Pipeline par Statut</div>
+          {prospects.length===0?<Empty icon="📭" msg="Aucun prospect"/>:
+            <DoughnutChart data={Object.keys(STATUTS).map(k=>prospects.filter(p=>p.statut===k).length)} labels={Object.values(STATUTS).map(s=>s.label)} colors={Object.values(STATUTS).map(s=>s.color)}/>}
+        </div>
+        <div style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:"var(--r2)",padding:20}}>
+          <div style={{fontFamily:"var(--font-cond)",fontWeight:700,fontSize:15,marginBottom:14}}>💰 Revenus Mensuels</div>
+          {revenus.length===0?<Empty icon="📊" msg="Aucun revenu"/>:
+            <BarChart labels={revLabels} data={[{label:"Site Web",values:last6.map(r=>r.site_web||0)},{label:"Streaming",values:last6.map(r=>r.streaming||0)},{label:"Agent IA",values:last6.map(r=>r.agent_ia||0)}]} colors={["#22d3ee","#a78bfa","#34d399"]}/>}
+        </div>
+      </div>
+ 
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:16}}>
+        <div style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:"var(--r2)",overflow:"hidden"}}>
+          <div style={{padding:"14px 20px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between"}}>
+            <span style={{fontFamily:"var(--font-cond)",fontWeight:700,fontSize:15}}>📅 RDV à Venir</span>
+            <Btn variant="ghost" size="sm" onClick={()=>setTab("prospects")}>Voir →</Btn>
+          </div>
+          {rdvs.length===0?<Empty icon="📅" msg="Aucun RDV"/>:rdvs.slice(0,5).map(p=>(
+            <div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 20px",borderBottom:"1px solid var(--border)"}}>
+              <span style={{fontSize:20}}>{TYPES[p.type]?.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:600,fontSize:13}}>{p.nom}</div>
+                <div style={{fontSize:11,color:"var(--text3)",fontFamily:"var(--font-mono)"}}>{p.tel}{p.dateRdv?` · 📅 ${p.dateRdv}`:""}</div>
+              </div>
+              <ServiceBadges services={p.services||p.service}/>
+            </div>
+          ))}
+        </div>
+        <div style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:"var(--r2)",overflow:"hidden"}}>
+          <div style={{padding:"14px 20px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between"}}>
+            <span style={{fontFamily:"var(--font-cond)",fontWeight:700,fontSize:15}}>🔨 Projets Actifs</span>
+            <Btn variant="ghost" size="sm" onClick={()=>setTab("projets")}>Voir →</Btn>
+          </div>
+          {projetsActifs.length===0?<Empty icon="💼" msg="Aucun projet actif"/>:projetsActifs.slice(0,4).map(p=>{
+            const pct=p.budget>0?Math.round((p.paye/p.budget)*100):0;
+            return(
+              <div key={p.id} style={{padding:"12px 20px",borderBottom:"1px solid var(--border)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                  <span style={{fontWeight:600,fontSize:13}}>{p.client}</span>
+                  <ServiceBadges services={p.services||p.service}/>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{flex:1,height:5,background:"var(--bg4)",borderRadius:3,overflow:"hidden"}}>
+                    <div style={{width:`${pct}%`,height:"100%",background:pct===100?"var(--green)":"var(--cyan)",borderRadius:3}}/>
+                  </div>
+                  <span style={{fontSize:11,color:"var(--text3)",fontFamily:"var(--font-mono)"}}>{pct}%</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+ 
+// ═══════════════════════════════════════
+//  TAB: PROSPECTS
+// ═══════════════════════════════════════
+function TabProspects({prospects,setProspects,addToast,setSyncing=()=>{},setSyncErr=()=>{}}){
+  const [search,setSearch]=useState("");
+  const [fStatut,setFStatut]=useState("tous");
+  const [fService,setFService]=useState("tous");
+  const [fType,setFType]=useState("tous");
+  const [sort,setSort]=useState({col:"dateAjout",dir:-1});
+  const [modal,setModal]=useState(null);
+  const [msgModal,setMsgModal]=useState(null);
+  const [confirmDel,setConfirmDel]=useState(null);
+  const [confirmDelAll,setConfirmDelAll]=useState(false);
+  const [selected,setSelected]=useState(new Set());
+  const [showImport,setShowImport]=useState(false);
+  const [viewMode,setViewMode]=useState("table");
+ 
+  const save=async(data,up=null,del=null)=>{setProspects(data);setSyncing(true);try{if(up)await SB.upsert("prospects",up);if(del)await SB.remove("prospects",del)}catch{setSyncErr(true)}setTimeout(()=>setSyncing(false),700)};
+  const changeStatut=async(id,statut)=>{const p=prospects.find(x=>x.id===id);if(p)await save(prospects.map(x=>x.id===id?{...x,statut}:x),{...p,statut})};
+ 
+  const filtered=useMemo(()=>{
+    let data=prospects;
+    if(search){const q=search.toLowerCase();data=data.filter(p=>p.nom.toLowerCase().includes(q)||p.tel.includes(q)||(p.ville||"").toLowerCase().includes(q))}
+    if(fStatut!=="tous")data=data.filter(p=>p.statut===fStatut);
+    if(fService!=="tous")data=data.filter(p=>normServices(p.services||p.service).includes(fService));
+    if(fType!=="tous")data=data.filter(p=>p.type===fType);
+    return [...data].sort((a,b)=>{const va=a[sort.col]||"",vb=b[sort.col]||"";return va<vb?-sort.dir:va>vb?sort.dir:0});
+  },[prospects,search,fStatut,fService,fType,sort]);
+ 
+  const toggleSort=col=>setSort(prev=>prev.col===col?{col,dir:-prev.dir}:{col,dir:1});
+ 
+  const exportCSV=()=>{
+    const hdr=["Nom","Type","Téléphone","Email","Ville","Site Web","Étoiles","Services","Statut","Notes","Date Ajout","Date RDV"];
+    const rows=prospects.map(p=>[p.nom,p.type,p.tel,p.email||"",p.ville||"",p.siteWebUrl||"non",p.etoiles||"",normServices(p.services||p.service).join("+"),STATUTS[p.statut]?.label||p.statut,(p.notes||"").replace(/,/g,";"),p.dateAjout||"",p.dateRdv||""]);
+    const csv=[hdr,...rows].map(r=>r.join(",")).join("\n");
+    const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");a.href=url;a.download="prospects_crm.csv";a.click();
+    addToast("📥 Export CSV téléchargé !");
+  };
+ 
+  const Th=({col,children})=>(
+    <th onClick={()=>toggleSort(col)} style={{padding:"10px 14px",textAlign:"left",fontSize:10,color:sort.col===col?"var(--cyan)":"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.8,borderBottom:"1px solid var(--border)",fontFamily:"var(--font-cond)",cursor:"pointer",userSelect:"none",whiteSpace:"nowrap"}}>
+      {children} {sort.col===col&&(sort.dir>0?"↑":"↓")}
+    </th>
+  );
+ 
+  return(
+    <div className="fade-up">
+      <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap",alignItems:"center"}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Rechercher..." style={{width:200,padding:"8px 12px",fontSize:13}}/>
+        <select value={fStatut} onChange={e=>setFStatut(e.target.value)} style={{padding:"8px 10px",fontSize:12,width:"auto"}}>
+          <option value="tous">Tous statuts</option>
+          {Object.entries(STATUTS).map(([k,v])=><option key={k} value={k}>{v.icon} {v.label}</option>)}
+        </select>
+        <select value={fService} onChange={e=>setFService(e.target.value)} style={{padding:"8px 10px",fontSize:12,width:"auto"}}>
+          <option value="tous">Tous services</option>
+          {Object.entries(SERVICES).map(([k,v])=><option key={k} value={k}>{v.icon} {v.label}</option>)}
+        </select>
+        <select value={fType} onChange={e=>setFType(e.target.value)} style={{padding:"8px 10px",fontSize:12,width:"auto"}}>
+          <option value="tous">Tous types</option>
+          {Object.entries(TYPES).map(([k,v])=><option key={k} value={k}>{v.icon} {v.label}</option>)}
+        </select>
+        <span style={{fontSize:11,color:"var(--text3)",fontFamily:"var(--font-mono)",marginRight:"auto"}}>{filtered.length} résultat(s)</span>
+        {selected.size>0&&<Btn variant="danger" size="sm" onClick={()=>{const ids=[...selected];const newP=prospects.filter(x=>!selected.has(x.id));setProspects(newP);setSyncing(true);Promise.all(ids.map(id=>SB.remove("prospects",id))).catch(()=>setSyncErr(true)).finally(()=>setTimeout(()=>setSyncing(false),700));setSelected(new Set());addToast(`🗑️ Supprimés`)}}>🗑️ ({selected.size})</Btn>}
+        {prospects.length>0&&<Btn variant="danger" size="sm" onClick={()=>setConfirmDelAll(true)}>🗑️ Tous</Btn>}
+        <Btn variant="secondary" size="sm" onClick={()=>setViewMode(v=>v==="table"?"cards":"table")}>{viewMode==="table"?"⊞":"≡"}</Btn>
+        <Btn variant="secondary" size="sm" onClick={exportCSV}>⬇ CSV</Btn>
+        <Btn variant="secondary" size="sm" onClick={()=>setShowImport(true)}>📥 Import</Btn>
+        <Btn variant="primary" size="sm" onClick={()=>setModal("new")}>➕ Nouveau</Btn>
+      </div>
+ 
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+        {Object.entries(STATUTS).map(([k,v])=>{
+          const count=prospects.filter(p=>p.statut===k).length;
+          return(<button key={k} onClick={()=>setFStatut(f=>f===k?"tous":k)} style={{display:"flex",alignItems:"center",gap:4,background:fStatut===k?v.bg:"transparent",color:v.color,border:`1px solid ${v.color}40`,borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:600,cursor:"pointer",transition:"all .15s"}}>
+            {v.icon} {v.label} <span style={{background:v.color+"25",borderRadius:10,padding:"0 5px"}}>{count}</span>
+          </button>);
+        })}
+      </div>
+ 
+      {prospects.length===0?(
+        <div style={{background:"var(--bg2)",border:"2px dashed var(--border2)",borderRadius:"var(--r2)",textAlign:"center",padding:"60px 20px"}}>
+          <div style={{fontSize:56,marginBottom:14}}>🎯</div>
+          <div style={{fontFamily:"var(--font-cond)",fontSize:22,fontWeight:700,marginBottom:8}}>Commencez votre prospection</div>
+          <div style={{color:"var(--text3)",marginBottom:24}}>Ajoutez manuellement vos prospects ou importez depuis Excel/CSV.</div>
+          <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
+            <Btn variant="primary" onClick={()=>setModal("new")}>➕ Ajouter un prospect</Btn>
+            <Btn variant="secondary" onClick={()=>setShowImport(true)}>📥 Importer Excel/CSV</Btn>
+          </div>
+        </div>
+      ):filtered.length===0?(
+        <Empty icon="🔍" msg="Aucun résultat" sub="Modifiez vos filtres"/>
+      ):viewMode==="table"?(
+        <div style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:"var(--r2)",overflow:"hidden"}}>
+          <div style={{overflowX:"auto"}}>
+            <table style={{width:"100%",borderCollapse:"collapse"}}>
+              <thead>
+                <tr style={{background:"var(--bg3)"}}>
+                  <th style={{padding:"10px 14px",borderBottom:"1px solid var(--border)"}}><input type="checkbox" checked={selected.size===filtered.length&&filtered.length>0} onChange={e=>setSelected(e.target.checked?new Set(filtered.map(p=>p.id)):new Set())} style={{width:"auto",cursor:"pointer"}}/></th>
+                  <Th col="nom">Établissement</Th>
+                  <Th col="type">Type</Th>
+                  <Th col="tel">Contact</Th>
+                  <th style={{padding:"10px 14px",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.8,borderBottom:"1px solid var(--border)",fontFamily:"var(--font-cond)"}}>Services</th>
+                  <Th col="statut">Statut</Th>
+                  <Th col="dateAjout">Date</Th>
+                  <th style={{padding:"10px 14px",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.8,borderBottom:"1px solid var(--border)",fontFamily:"var(--font-cond)"}}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(p=>(
+                  <tr key={p.id} style={{borderBottom:"1px solid var(--border)",transition:"background .15s"}}
+                    onMouseEnter={e=>e.currentTarget.style.background="var(--bg3)"}
+                    onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <td style={{padding:"10px 14px"}}><input type="checkbox" checked={selected.has(p.id)} onChange={e=>{setSelected(prev=>{const s=new Set(prev);e.target.checked?s.add(p.id):s.delete(p.id);return s})}} style={{width:"auto",cursor:"pointer"}}/></td>
+                    <td style={{padding:"10px 14px"}}>
+                      <div style={{fontWeight:600,fontSize:13}}>{p.nom}</div>
+                      {p.etoiles>0&&<div style={{fontSize:10,color:"var(--gold)"}}>{"★".repeat(p.etoiles)}</div>}
+                      {p.siteWebUrl&&<div style={{fontSize:10,color:"var(--cyan)",marginTop:1}}>🌐 {p.siteWebUrl}</div>}
+                    </td>
+                    <td style={{padding:"10px 14px"}}><span style={{fontSize:18}}>{TYPES[p.type]?.icon}</span></td>
+                    <td style={{padding:"10px 14px"}}>
+                      <a href={`tel:${p.tel}`} style={{color:"var(--cyan)",fontFamily:"var(--font-mono)",fontSize:12}}>{p.tel}</a>
+                      {p.email&&<div style={{fontSize:11,color:"var(--text3)"}}>{p.email}</div>}
+                    </td>
+                    <td style={{padding:"10px 14px",maxWidth:220}}><ServiceBadges services={p.services||p.service}/></td>
+                    <td style={{padding:"10px 14px"}}>
+                      <select value={p.statut} onChange={e=>changeStatut(p.id,e.target.value)} style={{padding:"4px 8px",fontSize:11,width:"auto",background:STATUTS[p.statut]?.bg,color:STATUTS[p.statut]?.color,border:`1px solid ${STATUTS[p.statut]?.color}50`,fontWeight:600}}>
+                        {Object.entries(STATUTS).map(([k,v])=><option key={k} value={k}>{v.icon} {v.label}</option>)}
+                      </select>
+                    </td>
+                    <td style={{padding:"10px 14px",fontSize:11,color:"var(--text3)",fontFamily:"var(--font-mono)"}}>{p.dateAjout}</td>
+                    <td style={{padding:"10px 14px"}}>
+                      <div style={{display:"flex",gap:4}}>
+                        <Btn variant="secondary" size="sm" onClick={()=>setModal(p)} style={{padding:"4px 8px"}}>✏️</Btn>
+                        <Btn variant="success" size="sm" onClick={()=>setMsgModal(p)} style={{padding:"4px 8px"}}>💬</Btn>
+                        <Btn variant="danger" size="sm" onClick={()=>setConfirmDel(p)} style={{padding:"4px 8px"}}>🗑️</Btn>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ):(
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
+          {filtered.map(p=>(
+            <div key={p.id} style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:"var(--r2)",padding:16,position:"relative",overflow:"hidden"}}>
+              <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:STATUTS[p.statut]?.color}}/>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                <div>
+                  <div style={{fontSize:20,marginBottom:4}}>{TYPES[p.type]?.icon}</div>
+                  <div style={{fontWeight:700,fontSize:14}}>{p.nom}</div>
+                  {p.etoiles>0&&<div style={{fontSize:10,color:"var(--gold)"}}>{"★".repeat(p.etoiles)}</div>}
+                </div>
+                <StatutBadge statut={p.statut}/>
+              </div>
+              <div style={{fontSize:12,color:"var(--text3)",fontFamily:"var(--font-mono)",marginBottom:6}}>{p.tel}</div>
+              <div style={{marginBottom:8}}><ServiceBadges services={p.services||p.service}/></div>
+              {p.notes&&<div style={{fontSize:11,color:"var(--text3)",fontStyle:"italic",marginBottom:8,borderTop:"1px solid var(--border)",paddingTop:8}}>{p.notes.slice(0,80)}{p.notes.length>80?"...":""}</div>}
+              <div style={{display:"flex",gap:6,marginTop:10}}>
+                <Btn variant="secondary" size="sm" onClick={()=>setModal(p)} style={{flex:1}}>✏️</Btn>
+                <Btn variant="success" size="sm" onClick={()=>setMsgModal(p)} style={{flex:1}}>💬</Btn>
+                <Btn variant="danger" size="sm" onClick={()=>setConfirmDel(p)} style={{padding:"5px 8px"}}>🗑️</Btn>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {modal&&<ProspectModal prospect={modal==="new"?null:modal} onSave={p=>{if(modal==="new"){save([p,...prospects],p);addToast(`✅ ${p.nom} ajouté !`)}else{save(prospects.map(x=>x.id===p.id?p:x),p);addToast("✅ Modifié")}setModal(null)}} onClose={()=>setModal(null)}/>}
+      {msgModal&&<MsgModal prospect={msgModal} onClose={()=>setMsgModal(null)} onSent={async()=>{const updated={...msgModal,msgSent:true};setProspects(prospects.map(x=>x.id===msgModal.id?updated:x));await SB.upsert("prospects",updated);setMsgModal(null)}}/>}
+      {confirmDel&&<ConfirmModal title="Supprimer ce prospect ?" msg={`Voulez-vous vraiment supprimer "${confirmDel.nom}" ?`} onConfirm={()=>{save(prospects.filter(x=>x.id!==confirmDel.id),null,confirmDel.id);setConfirmDel(null);addToast("🗑️ Supprimé")}} onClose={()=>setConfirmDel(null)}/>}
+      {confirmDelAll&&<ConfirmModal title="⚠️ Supprimer TOUS les prospects ?" msg={`Êtes-vous certain? ${prospects.length} prospect(s) seront supprimés définitivement.`} onConfirm={()=>{const ids=prospects.map(p=>p.id);setProspects([]);setSyncing(true);Promise.all(ids.map(id=>SB.remove("prospects",id))).catch(()=>setSyncErr(true)).finally(()=>setTimeout(()=>setSyncing(false),700));setConfirmDelAll(false);addToast("🗑️ Tous les prospects supprimés")}} onClose={()=>setConfirmDelAll(false)}/>}
+      {showImport&&<ImportModal onImport={async data=>{await SB.upsertMany("prospects",data);setProspects(p=>[...data,...p]);setSyncing(true);setTimeout(()=>setSyncing(false),700);setShowImport(false);addToast(`✅ ${data.length} prospects importés !`)}} onClose={()=>setShowImport(false)}/>}
+    </div>
+  );
+}
+ 
+// ═══════════════════════════════════════
+//  TAB: PAIEMENTS
+// ═══════════════════════════════════════
+function TabPaiements({paiements,setPaiements,addToast,setSyncing=()=>{},setSyncErr=()=>{},isMobile=false}){
+  const [modal,setModal]=useState(null);
+  const [confirmDel,setConfirmDel]=useState(null);
+  const [fStatut,setFStatut]=useState("tous");
+  const [search,setSearch]=useState("");
+  const [viewDetail,setViewDetail]=useState(null);
+ 
+  const save=async(data,up=null,del=null)=>{setPaiements(data);setSyncing(true);try{if(up)await SB.upsert("paiements",up);if(del)await SB.remove("paiements",del)}catch{setSyncErr(true)}setTimeout(()=>setSyncing(false),700)};
+ 
+  const filtered=paiements.filter(p=>{
+    if(search&&!p.client.toLowerCase().includes(search.toLowerCase()))return false;
+    if(fStatut!=="tous"&&p.statutPaiement!==fStatut)return false;
+    return true;
+  });
+ 
+  const totalFacture=paiements.reduce((a,p)=>a+(p.montantTotal||0),0);
+  const totalRecu=paiements.reduce((a,p)=>a+(p.totalVerse||p.acompteVerse||0),0);
+  const totalRestant=totalFacture-totalRecu;
+  const impayes=paiements.filter(p=>p.statutPaiement==="impaye");
+  const partiels=paiements.filter(p=>p.statutPaiement==="partiel"||p.statutPaiement==="echeance");
+  const payes=paiements.filter(p=>p.statutPaiement==="paye");
+ 
+  // Analyse mensuelle des paiements
+  const byMonth={};
+  paiements.forEach(p=>{
+    const m=p.dateFacture?p.dateFacture.slice(0,7):"inconnu";
+    if(!byMonth[m])byMonth[m]={facture:0,recu:0,restant:0};
+    byMonth[m].facture+=(p.montantTotal||0);
+    byMonth[m].recu+=(p.totalVerse||p.acompteVerse||0);
+    byMonth[m].restant+=Math.max(0,(p.montantTotal||0)-(p.totalVerse||p.acompteVerse||0));
+  });
+  const months=Object.keys(byMonth).sort().slice(-6);
+  const chartLabels=months.map(m=>{const[y,mo]=m.split("-");const nm=["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];return(nm[parseInt(mo)-1]||mo)+" "+y?.slice(2)});
+ 
+  const exportCSV=()=>{
+    const hdr=["Client","Service","Facturé","Reçu","Restant","Statut","Date Facture","Date Échéance","Notes"];
+    const rows=paiements.map(p=>[p.client,SERVICES[p.typeService]?.label||p.typeService,p.montantTotal||0,p.totalVerse||p.acompteVerse||0,p.resteAPayer||0,STATUTS_PAIEMENT[p.statutPaiement]?.label||p.statutPaiement,p.dateFacture||"",p.dateEcheance||"",(p.notes||"").replace(/,/g,";")]);
+    const csv=[hdr,...rows].map(r=>r.join(",")).join("\n");
+    const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");a.href=url;a.download="paiements_crm.csv";a.click();
+    addToast("📥 Export CSV téléchargé !");
+  };
+ 
+  return(
+    <div className="fade-up">
+      {/* KPIs */}
+      <div style={{display:"flex",gap:isMobile?8:12,flexWrap:"wrap",marginBottom:16}}>
+        <KPI label="Total facturé" value={fmtK(totalFacture)} sub="FCFA" color="var(--text2)" icon="📄"/>
+        <KPI label="Total encaissé" value={fmtK(totalRecu)} sub="FCFA" color="var(--green)" icon="💚"/>
+        <KPI label="Restant à recevoir" value={fmtK(totalRestant)} sub="FCFA" color={totalRestant>0?"var(--red)":"var(--green)"} icon="⏳"/>
+        <KPI label="Payés intégralement" value={payes.length} sub="dossiers soldés" color="var(--green)" icon="✅"/>
+        <KPI label="En attente / Partiel" value={impayes.length+partiels.length} sub="à relancer" color={impayes.length+partiels.length>0?"var(--red)":"var(--green)"} icon="⚠️"/>
+      </div>
+ 
+      {/* Chart */}
+      {months.length>0&&(
+        <div style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:"var(--r2)",padding:20,marginBottom:16}}>
+          <div style={{fontFamily:"var(--font-cond)",fontWeight:700,fontSize:15,marginBottom:14}}>📊 Analyse Mensuelle — Facturé vs Encaissé</div>
+          <BarChart
+            labels={chartLabels}
+            data={[
+              {label:"Facturé",values:months.map(m=>byMonth[m].facture)},
+              {label:"Encaissé",values:months.map(m=>byMonth[m].recu)},
+              {label:"Restant",values:months.map(m=>byMonth[m].restant)},
+            ]}
+            colors={["#94a3b8","#34d399","#f43f5e"]}
+          />
+        </div>
+      )}
+ 
+      {/* Toolbar */}
+      <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap",alignItems:"center"}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Rechercher un client..." style={{width:220,padding:"8px 12px",fontSize:13}}/>
+        <select value={fStatut} onChange={e=>setFStatut(e.target.value)} style={{padding:"8px 10px",fontSize:12,width:"auto"}}>
+          <option value="tous">Tous les statuts</option>
+          {Object.entries(STATUTS_PAIEMENT).map(([k,v])=><option key={k} value={k}>{v.icon} {v.label}</option>)}
+        </select>
+        <span style={{fontSize:11,color:"var(--text3)",fontFamily:"var(--font-mono)",marginRight:"auto"}}>{filtered.length} dossier(s)</span>
+        <Btn variant="secondary" size="sm" onClick={exportCSV}>⬇ CSV</Btn>
+        <Btn variant="primary" size="sm" onClick={()=>setModal("new")}>➕ Nouveau suivi</Btn>
+      </div>
+ 
+      {/* Pills statuts */}
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+        {Object.entries(STATUTS_PAIEMENT).map(([k,v])=>{
+          const count=paiements.filter(p=>p.statutPaiement===k).length;
+          return(<button key={k} onClick={()=>setFStatut(f=>f===k?"tous":k)} style={{display:"flex",alignItems:"center",gap:4,background:fStatut===k?v.bg:"transparent",color:v.color,border:`1px solid ${v.color}40`,borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:600,cursor:"pointer",transition:"all .15s"}}>
+            {v.icon} {v.label} <span style={{background:v.color+"25",borderRadius:10,padding:"0 5px"}}>{count}</span>
+          </button>);
+        })}
+      </div>
+ 
+      {paiements.length===0?(
+        <div style={{background:"var(--bg2)",border:"2px dashed var(--border2)",borderRadius:"var(--r2)",textAlign:"center",padding:"60px 20px"}}>
+          <div style={{fontSize:56,marginBottom:14}}>💳</div>
+          <div style={{fontFamily:"var(--font-cond)",fontSize:22,fontWeight:700,marginBottom:8}}>Aucun suivi de paiement</div>
+          <div style={{color:"var(--text3)",marginBottom:24}}>Créez des fiches de suivi pour chaque client : acomptes, versements, soldes restants.</div>
+          <Btn variant="primary" onClick={()=>setModal("new")}>➕ Créer un suivi paiement</Btn>
+        </div>
+      ):filtered.length===0?<Empty icon="🔍" msg="Aucun résultat"/>:(
+        <div style={{display:"grid",gap:10}}>
+          {filtered.map(p=>{
+            const totalVerse=p.totalVerse||p.acompteVerse||0;
+            const restant=p.resteAPayer||Math.max(0,(p.montantTotal||0)-totalVerse);
+            const pct=p.montantTotal>0?Math.round((totalVerse/p.montantTotal)*100):0;
+            const sp=STATUTS_PAIEMENT[p.statutPaiement]||STATUTS_PAIEMENT.impaye;
+            return(
+              <div key={p.id} style={{background:"var(--bg2)",border:`1px solid ${sp.color}40`,borderRadius:"var(--r2)",overflow:"hidden"}}>
+                <div style={{height:3,background:sp.color}}/>
+                <div style={{padding:"16px 20px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+                    <div>
+                      <div style={{fontFamily:"var(--font-cond)",fontSize:17,fontWeight:700}}>{p.client}</div>
+                      <div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>
+                        {SERVICES[p.typeService]?.icon} {SERVICES[p.typeService]?.label||p.typeService}
+                        {p.dateFacture&&<span style={{marginLeft:10,fontFamily:"var(--font-mono)"}}>📄 {p.dateFacture}</span>}
+                        {p.dateEcheance&&<span style={{marginLeft:10,fontFamily:"var(--font-mono)",color:p.statutPaiement!=="paye"?"var(--orange)":""}}> ⚠️ Échéance {p.dateEcheance}</span>}
+                      </div>
+                    </div>
+                    <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0,marginLeft:12}}>
+                      <PaiementBadge statut={p.statutPaiement}/>
+                    </div>
+                  </div>
+ 
+                  {/* Chiffres */}
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
+                    {[["Total facturé",p.montantTotal||0,"var(--text2)"],["Encaissé",totalVerse,"var(--green)"],["Restant",restant,restant>0?"var(--red)":"var(--green)"],["Acompte",p.acompteVerse||0,"var(--violet)"]].map(([l,v,c])=>(
+                      <div key={l} style={{background:"var(--bg3)",borderRadius:"var(--r)",padding:"10px 12px",textAlign:"center"}}>
+                        <div style={{fontSize:9,color:"var(--text3)",marginBottom:3,fontFamily:"var(--font-cond)",textTransform:"uppercase",letterSpacing:.8}}>{l}</div>
+                        <div style={{fontWeight:700,color:c,fontFamily:"var(--font-mono)",fontSize:12}}>{(v).toLocaleString("fr-FR")}</div>
+                        <div style={{fontSize:9,color:"var(--text3)"}}>FCFA</div>
+                      </div>
+                    ))}
+                  </div>
+ 
+                  {/* Barre de progression */}
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:p.versements?.length?10:0}}>
+                    <div style={{flex:1,height:6,background:"var(--bg4)",borderRadius:3,overflow:"hidden"}}>
+                      <div style={{width:`${pct}%`,height:"100%",background:pct===100?"var(--green)":pct>50?"var(--gold)":"var(--orange)",borderRadius:3,transition:"width .4s"}}/>
+                    </div>
+                    <span style={{fontSize:11,color:"var(--text3)",fontFamily:"var(--font-mono)",minWidth:34}}>{pct}%</span>
+                  </div>
+ 
+                  {/* Versements */}
+                  {p.versements?.length>0&&(
+                    <div style={{marginBottom:8}}>
+                      <div style={{fontSize:10,color:"var(--text3)",marginBottom:5,fontFamily:"var(--font-cond)",textTransform:"uppercase",letterSpacing:.8}}>Versements ({p.versements.length})</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                        {p.versements.map(v=>(
+                          <span key={v.id} style={{background:"var(--green-dim)",color:"var(--green)",borderRadius:6,padding:"3px 10px",fontSize:11,fontFamily:"var(--font-mono)"}}>
+                            +{(v.montant).toLocaleString("fr-FR")} FCFA {v.date&&`· ${v.date}`}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+ 
+                  {p.notes&&<div style={{fontSize:11,color:"var(--text3)",fontStyle:"italic",marginBottom:8}}>{p.notes}</div>}
+ 
+                  <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
+                    <Btn variant="secondary" size="sm" onClick={()=>setModal(p)}>✏️ Modifier</Btn>
+                    <Btn variant="danger" size="sm" onClick={()=>setConfirmDel(p)}>🗑️</Btn>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+ 
+      {modal&&<PaiementModal paiement={modal==="new"?null:modal} onSave={p=>{
+        if(modal==="new")save([p,...paiements],p);
+        else save(paiements.map(x=>x.id===p.id?p:x),p);
+        setModal(null);addToast("✅ Paiement enregistré !");
+      }} onClose={()=>setModal(null)}/>}
+      {confirmDel&&<ConfirmModal title="Supprimer ce suivi ?" msg={`Supprimer le suivi de "${confirmDel.client}" ?`} onConfirm={()=>{save(paiements.filter(x=>x.id!==confirmDel.id),null,confirmDel.id);setConfirmDel(null);addToast("🗑️ Supprimé")}} onClose={()=>setConfirmDel(null)}/>}
+    </div>
+  );
+}
+ 
+// ═══════════════════════════════════════
+//  TAB: PROJETS
+// ═══════════════════════════════════════
+function TabProjets({projets,setProjets,addToast,paiements=[],setPaiements=()=>{},setSyncing=()=>{},setSyncErr=()=>{}}){
+  const [modal,setModal]=useState(null);
+  const [confirmDel,setConfirmDel]=useState(null);
+  const save=async(data,up=null,del=null)=>{setProjets(data);setSyncing(true);try{if(up)await SB.upsert("projets",up);if(del)await SB.remove("projets",del)}catch{setSyncErr(true)}setTimeout(()=>setSyncing(false),700)};
+  const tb=projets.reduce((a,b)=>a+(b.budget||0),0);
+  const tp=projets.reduce((a,b)=>a+(b.paye||0),0);
+  return(
+    <div className="fade-up">
+      <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:20}}>
+        <KPI label="En cours" value={projets.filter(p=>p.statut==="en_cours").length} color="var(--cyan)" icon="🔨"/>
+        <KPI label="Livrés" value={projets.filter(p=>p.statut==="livre").length} color="var(--green)" icon="✅"/>
+        <KPI label="Budget total" value={fmtK(tb)} sub="FCFA" color="var(--gold)" icon="💰"/>
+        <KPI label="Perçu" value={fmtK(tp)} sub="FCFA" color="var(--green)" icon="✓"/>
+        <KPI label="Restant dû" value={fmtK(tb-tp)} sub="FCFA" color={tb-tp>0?"var(--red)":"var(--green)"} icon="⏳"/>
+      </div>
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:14}}>
+        <Btn variant="primary" onClick={()=>setModal("new")}>➕ Nouveau Projet</Btn>
+      </div>
+      {projets.length===0?(
+        <div style={{background:"var(--bg2)",border:"2px dashed var(--border2)",borderRadius:"var(--r2)",textAlign:"center",padding:"60px 20px"}}>
+          <div style={{fontSize:50,marginBottom:12}}>💼</div>
+          <div style={{fontFamily:"var(--font-cond)",fontSize:20,fontWeight:700,marginBottom:8}}>Aucun projet</div>
+          <div style={{color:"var(--text3)",marginBottom:20}}>Créez votre premier projet client.</div>
+          <Btn variant="primary" onClick={()=>setModal("new")}>➕ Créer un projet</Btn>
+        </div>
+      ):(
+        <div style={{display:"grid",gap:12}}>
+          {projets.map(p=>{
+            const pct=p.budget>0?Math.round((p.paye/p.budget)*100):0;
+            const sc=STATUTS_PROJET[p.statut]||{label:p.statut,color:"var(--text3)"};
+            return(
+              <div key={p.id} style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:"var(--r2)",overflow:"hidden"}}>
+                <div style={{height:3,background:sc.color}}/>
+                <div style={{padding:"18px 22px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                    <div>
+                      <div style={{fontFamily:"var(--font-cond)",fontSize:17,fontWeight:700}}>{p.client}</div>
+                      <div style={{fontSize:12,color:"var(--text3)",marginTop:2}}>{p.description}</div>
+                    </div>
+                    <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0,marginLeft:12}}>
+                      <ServiceBadges services={p.services||p.service}/>
+                      <span style={{fontSize:12,color:sc.color,fontWeight:700,background:sc.color+"15",padding:"3px 10px",borderRadius:6}}>{sc.label}</span>
+                    </div>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:12}}>
+                    {[["Début",p.debut,"var(--text3)"],["Fin prévue",p.fin||"—","var(--text3)"],["Budget",fmtK(p.budget)+" FCFA","var(--gold)"],["Perçu",fmtK(p.paye)+" FCFA","var(--green)"]].map(([l,v,c])=>(
+                      <div key={l}><div style={{fontSize:10,color:"var(--text3)",marginBottom:3,fontFamily:"var(--font-cond)",fontWeight:600,textTransform:"uppercase",letterSpacing:.8}}>{l}</div><div style={{fontWeight:700,color:c,fontFamily:"var(--font-mono)",fontSize:13}}>{v}</div></div>
+                    ))}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{flex:1,height:7,background:"var(--bg4)",borderRadius:4,overflow:"hidden"}}>
+                      <div style={{width:`${pct}%`,height:"100%",background:pct===100?"var(--green)":"var(--cyan)",borderRadius:4,transition:"width .5s"}}/>
+                    </div>
+                    <span style={{fontSize:11,color:"var(--text3)",fontFamily:"var(--font-mono)",minWidth:35}}>{pct}%</span>
+                    <Btn variant="secondary" size="sm" onClick={()=>setModal(p)} style={{padding:"4px 8px"}}>✏️</Btn>
+                    <Btn variant="danger" size="sm" onClick={()=>setConfirmDel(p)} style={{padding:"4px 8px"}}>🗑️</Btn>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {modal&&<ProjetModal projet={modal==="new"?null:modal} onSave={async p=>{
+        setModal(null);
+        if(modal==="new"){
+          save([p,...projets],p);
+          if(p.budget>0){
+            const pai={id:uid(),client:p.client,typeService:normServices(p.services||p.service)[0]||"site_web",montantTotal:p.budget||0,acompteVerse:p.paye||0,versements:[],statutPaiement:(p.paye||0)>=(p.budget||0)&&p.budget>0?"paye":(p.paye||0)>0?"partiel":"impaye",dateFacture:p.debut||today(),dateEcheance:p.fin||"",notes:"Créé auto depuis Projet",totalVerse:p.paye||0,resteAPayer:Math.max(0,(p.budget||0)-(p.paye||0))};
+            const newPai=[pai,...(paiements||[])];
+            setPaiements(newPai);
+            try{setSyncing(true);await SB.upsert("paiements",pai);}catch{setSyncErr(true);}finally{setTimeout(()=>setSyncing(false),700);}
+          }
+          addToast("✅ Projet créé !");
+        }else{
+          save(projets.map(x=>x.id===p.id?p:x),p);
+          addToast("✅ Modifié");
+        }
+      }} onClose={()=>setModal(null)}/>}
+      {confirmDel&&<ConfirmModal title="Supprimer ce projet ?" msg={`Supprimer "${confirmDel.client}" ?`} onConfirm={()=>{save(projets.filter(x=>x.id!==confirmDel.id));setConfirmDel(null);addToast("🗑️ Supprimé")}} onClose={()=>setConfirmDel(null)}/>}
+    </div>
+  );
+}
+ 
+// ═══════════════════════════════════════
+//  TAB: REVENUS
+// ═══════════════════════════════════════
+function TabRevenus({revenus,setRevenus,addToast,setSyncing=()=>{},setSyncErr=()=>{}}){
+  const [modal,setModal]=useState(null);
+  const [confirmDel,setConfirmDel]=useState(null);
+  const save=async(data,up=null,del=null)=>{setRevenus(data);setSyncing(true);try{if(up)await SB.upsert("revenus",up);if(del)await SB.remove("revenus",del)}catch{setSyncErr(true)}setTimeout(()=>setSyncing(false),700)};
+  const sorted=[...revenus].sort((a,b)=>a.mois<b.mois?1:-1);
+  const total=revenus.reduce((a,b)=>a+(b.total||0),0);
+  const moy=revenus.length>0?total/revenus.length:0;
+  const last6=[...revenus].sort((a,b)=>a.mois<b.mois?1:-1).slice(0,6).reverse();
+  const labels=last6.map(r=>{if(!r.mois)return"";const[y,m]=r.mois.split("-");const nm=["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];return(nm[parseInt(m)-1]||m)+" "+y?.slice(2)});
+  return(
+    <div className="fade-up">
+      <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:20}}>
+        <KPI label="Total cumulé" value={total>0?fmtK(total):"—"} sub="FCFA" color="var(--green)" icon="💰"/>
+        <KPI label="Moy. mensuelle" value={moy>0?fmtK(moy):"—"} sub="FCFA" color="var(--cyan)" icon="📈"/>
+        <KPI label="Site Web" value={fmtK(revenus.reduce((a,b)=>a+(b.site_web||0),0))} sub="FCFA" color="var(--cyan)" icon="🌐"/>
+        <KPI label="Streaming" value={fmtK(revenus.reduce((a,b)=>a+(b.streaming||0),0))} sub="FCFA" color="var(--violet)" icon="📺"/>
+        <KPI label="Agent IA" value={fmtK(revenus.reduce((a,b)=>a+(b.agent_ia||0),0))} sub="FCFA" color="var(--green)" icon="🤖"/>
+      </div>
+      {last6.length>0&&(
+        <div style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:"var(--r2)",padding:20,marginBottom:16}}>
+          <div style={{fontFamily:"var(--font-cond)",fontWeight:700,fontSize:15,marginBottom:14}}>📊 Évolution des revenus</div>
+          <BarChart labels={labels} data={[{label:"Site Web",values:last6.map(r=>r.site_web||0)},{label:"Streaming",values:last6.map(r=>r.streaming||0)},{label:"Agent IA",values:last6.map(r=>r.agent_ia||0)},{label:"Autre",values:last6.map(r=>r.autre||0)}]} colors={["#22d3ee","#a78bfa","#34d399","#fbbf24"]}/>
+        </div>
+      )}
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
+        <Btn variant="primary" onClick={()=>setModal("new")}>➕ Ajouter un mois</Btn>
+      </div>
+      {sorted.length===0?<Empty icon="💰" msg="Aucun revenu enregistré" sub="Ajoutez vos revenus mensuels."/>:(
+        <div style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:"var(--r2)",overflow:"hidden"}}>
+          <table style={{width:"100%",borderCollapse:"collapse"}}>
+            <thead>
+              <tr style={{background:"var(--bg3)"}}>
+                {["Mois","Site Web","Streaming","Agent IA","Autre","Total","Actions"].map(h=>(
+                  <th key={h} style={{padding:"10px 16px",textAlign:h==="Mois"?"left":"right",fontSize:10,color:"var(--text3)",fontWeight:700,textTransform:"uppercase",letterSpacing:.8,borderBottom:"1px solid var(--border)",fontFamily:"var(--font-cond)"}}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map(r=>{
+                const[y,m]=r.mois.split("-");
+                const nm=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+                return(
+                  <tr key={r.id} style={{borderBottom:"1px solid var(--border)"}} onMouseEnter={e=>e.currentTarget.style.background="var(--bg3)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <td style={{padding:"12px 16px",fontWeight:600}}>{(nm[parseInt(m)-1]||m)+" "+y}</td>
+                    {[r.site_web||0,r.streaming||0,r.agent_ia||0,r.autre||0].map((v,i)=>(
+                      <td key={i} style={{padding:"12px 16px",textAlign:"right",fontFamily:"var(--font-mono)",fontSize:12,color:v>0?"var(--text2)":"var(--text3)"}}>{v>0?v.toLocaleString("fr-FR")+" FCFA":"—"}</td>
+                    ))}
+                    <td style={{padding:"12px 16px",textAlign:"right",fontWeight:700,color:"var(--green)",fontFamily:"var(--font-mono)"}}>{(r.total||0).toLocaleString("fr-FR")} FCFA</td>
+                    <td style={{padding:"12px 16px",textAlign:"right"}}>
+                      <div style={{display:"flex",gap:4,justifyContent:"flex-end"}}>
+                        <Btn variant="secondary" size="sm" onClick={()=>setModal(r)} style={{padding:"4px 8px"}}>✏️</Btn>
+                        <Btn variant="danger" size="sm" onClick={()=>setConfirmDel(r)} style={{padding:"4px 8px"}}>🗑️</Btn>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              <tr style={{background:"var(--bg3)"}}>
+                <td style={{padding:"12px 16px",fontWeight:700,fontFamily:"var(--font-cond)",fontSize:13,color:"var(--text2)"}}>TOTAL</td>
+                {["site_web","streaming","agent_ia","autre"].map(k=>(
+                  <td key={k} style={{padding:"12px 16px",textAlign:"right",fontWeight:700,fontFamily:"var(--font-mono)",fontSize:12,color:"var(--text2)"}}>{revenus.reduce((a,b)=>a+(b[k]||0),0).toLocaleString("fr-FR")}</td>
+                ))}
+                <td style={{padding:"12px 16px",textAlign:"right",fontWeight:700,color:"var(--green)",fontFamily:"var(--font-mono)",fontSize:14}}>{total.toLocaleString("fr-FR")} FCFA</td>
+                <td/>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+      {modal&&<RevenuModal revenu={modal==="new"?null:modal} onSave={r=>{if(modal==="new")save([...revenus,r]);else save(revenus.map(x=>x.id===r.id?r:x),r);setModal(null);addToast("✅ Enregistré")}} onClose={()=>setModal(null)}/>}
+      {confirmDel&&<ConfirmModal title="Supprimer ?" msg={`Supprimer les revenus de "${confirmDel.mois}" ?`} onConfirm={()=>{save(revenus.filter(x=>x.id!==confirmDel.id),null,confirmDel.id);setConfirmDel(null);addToast("🗑️ Supprimé")}} onClose={()=>setConfirmDel(null)}/>}
+    </div>
+  );
+}
+ 
+// ═══════════════════════════════════════
+//  TAB: MESSAGES
+// ═══════════════════════════════════════
+function TabMessages({prospects,setProspects}){
+  const [search,setSearch]=useState("");
+  const [fService,setFService]=useState("tous");
+  const [selected,setSelected]=useState(null);
+  const [showArchived,setShowArchived]=useState(false);
+  const filtered=prospects.filter(p=>{
+    if(showArchived&&!p.msgSent)return false;
+    if(!showArchived&&p.msgSent)return false;
+    if(search&&!p.nom.toLowerCase().includes(search.toLowerCase())&&!p.tel.includes(search))return false;
+    if(fService!=="tous"&&!normServices(p.services||p.service).includes(fService))return false;
+    return true;
+  });
+  const archivedCount=prospects.filter(p=>p.msgSent).length;
+  const pendingCount=prospects.filter(p=>!p.msgSent).length;
+  const markSent=async(p)=>{
+    const updated={...p,msgSent:true};
+    setProspects(prospects.map(x=>x.id===p.id?updated:x));
+    if(SB.upsertOne)await SB.upsertOne("prospects",updated);
+  };
+  return(
+    <div className="fade-up">
+      <div style={{background:"var(--cyan-dim)",border:"1px solid var(--cyan)30",borderRadius:"var(--r)",padding:"12px 16px",marginBottom:14,fontSize:13,color:"var(--cyan)"}}>
+        💡 Chaque message est 100% personnalisé selon le profil du prospect. Une fois envoyé, il va dans les "Archivés".
+      </div>
+      <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Rechercher..." style={{flex:1,minWidth:150,padding:"8px 12px",fontSize:13}}/>
+        <select value={fService} onChange={e=>setFService(e.target.value)} style={{padding:"8px 10px",fontSize:12,width:"auto"}}>
+          <option value="tous">Tous services</option>
+          {Object.entries(SERVICES).map(([k,v])=><option key={k} value={k}>{v.icon} {v.label}</option>)}
+        </select>
+        <button onClick={()=>setShowArchived(s=>!s)} style={{padding:"8px 12px",background:showArchived?"var(--green-dim)":"var(--bg3)",color:showArchived?"var(--green)":"var(--text3)",border:"1px solid var(--border)",borderRadius:"var(--r)",fontSize:12,cursor:"pointer",fontFamily:"var(--font)",fontWeight:600}}>
+          {showArchived?"📦 Archivés":"📨 À envoyer"} ({showArchived?archivedCount:pendingCount})
+        </button>
+      </div>
+      {filtered.length===0?<Empty icon="💬" msg={showArchived?"Aucun message archivé":"Aucun message à envoyer"} sub={showArchived?"Envoyez des messages pour les voir ici":"Cliquez sur un prospect pour générer un message"}/>:(
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          {filtered.map(p=>(
+            <div key={p.id} style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:"var(--r2)",padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0}}>
+                <span style={{fontSize:22,flexShrink:0}}>{TYPES[p.type]?.icon}</span>
+                <div style={{minWidth:0}}>
+                  <div style={{fontWeight:600,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nom}</div>
+                  <div style={{marginTop:4,display:"flex",flexWrap:"wrap",gap:3}}><ServiceBadges services={p.services||p.service}/></div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
+                <StatutBadge statut={p.statut}/>
+                <Btn variant="success" size="sm" onClick={()=>setSelected(p)}>💬</Btn>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {selected&&<MsgModal prospect={selected} onClose={()=>setSelected(null)} onSent={()=>{markSent(selected);setSelected(null);}}/>}
+    </div>
+  );
+}
+ 
+// ═══════════════════════════════════════
+//  TAB: SETTINGS
+// ═══════════════════════════════════════
+function TabSettings({addToast,onDisconnect}){
+  const [confirm,setConfirm]=useState(false);
+  const exportAll=()=>{
+    const data={prospects,projets,revenus,paiements,exportedAt:new Date().toISOString(),version:APP_VERSION};
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");a.href=url;a.download=`crm_backup_${today()}.json`;a.click();
+    addToast("📥 Backup téléchargé !");
+  };
+  const importBackup=e=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=async ev=>{
+      try{
+        const data=JSON.parse(ev.target.result);
+        if(data.prospects){await SB.upsertMany("prospects",data.prospects);setProspects(data.prospects);}
+        if(data.projets){await SB.upsertMany("projets",data.projets);setProjets(data.projets);}
+        if(data.revenus){await SB.upsertMany("revenus",data.revenus);setRevenus(data.revenus);}
+        if(data.paiements){await SB.upsertMany("paiements",data.paiements);setPaiements(data.paiements);}
+        addToast("✅ Backup restauré ! Rechargez la page.");
+      }catch{addToast("❌ Fichier invalide","error")}
+    };
+    reader.readAsText(file);
+  };
+  return(
+    <div className="fade-up" style={{maxWidth:600}}>
+      <div style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:"var(--r2)",padding:24,marginBottom:16}}>
+        <div style={{fontFamily:"var(--font-cond)",fontWeight:700,fontSize:16,marginBottom:16}}>ℹ️ Informations</div>
+        {[["Version",APP_VERSION],["Stockage","localStorage (local, privé)"],["WhatsApp",WHATSAPP],["Email",EMAIL],["Portfolio",SITE_URL]].map(([k,v])=>(
+          <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid var(--border)",fontSize:13}}>
+            <span style={{color:"var(--text3)"}}>{k}</span>
+            <span style={{color:"var(--text)",fontFamily:"var(--font-mono)",fontSize:12}}>{v}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:"var(--r2)",padding:24,marginBottom:16}}>
+        <div style={{fontFamily:"var(--font-cond)",fontWeight:700,fontSize:16,marginBottom:16}}>💾 Sauvegarde & Restauration</div>
+        <div style={{fontSize:13,color:"var(--text3)",marginBottom:14}}>Exportez toutes vos données (prospects, projets, revenus, paiements) en JSON pour les sauvegarder ou les transférer.</div>
+        <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+          <Btn variant="primary" onClick={exportAll}>📥 Exporter toutes les données (JSON)</Btn>
+          <Btn variant="danger" size="sm" onClick={()=>{clearCreds();onDisconnect();}}>🔌 Déconnecter Supabase</Btn>
+          <label><input type="file" accept=".json" onChange={importBackup} style={{display:"none"}}/><Btn variant="secondary" onClick={()=>{}}>📂 Restaurer un backup</Btn></label>
+        </div>
+      </div>
+      <div style={{background:"var(--red-dim)",border:"1px solid var(--red)30",borderRadius:"var(--r2)",padding:24}}>
+        <div style={{fontFamily:"var(--font-cond)",fontWeight:700,fontSize:16,marginBottom:8,color:"var(--red)"}}>⚠️ Zone Danger</div>
+        <div style={{fontSize:13,color:"var(--text3)",marginBottom:16}}>Supprime <strong>toutes les données</strong> définitivement.</div>
+        {!confirm?<Btn variant="danger" onClick={()=>setConfirm(true)}>🗑️ Effacer toutes les données</Btn>:(
+          <div style={{display:"flex",gap:10}}>
+            <Btn variant="ghost" onClick={()=>setConfirm(false)}>Annuler</Btn>
+            <Btn variant="danger" onClick={()=>{localStorage.clear();addToast("✅ Données effacées. Rechargez la page.");setConfirm(false)}}>✔ Confirmer</Btn>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+ 
+// ═══════════════════════════════════════
+//  APP ROOT
+// ═══════════════════════════════════════
+const SQL_SETUP=`create table if not exists prospects(id text primary key,data jsonb not null,updated_at timestamptz default now());
+create table if not exists projets(id text primary key,data jsonb not null,updated_at timestamptz default now());
+create table if not exists revenus(id text primary key,data jsonb not null,updated_at timestamptz default now());
+create table if not exists paiements(id text primary key,data jsonb not null,updated_at timestamptz default now());
+alter table prospects enable row level security;
+alter table projets enable row level security;
+alter table revenus enable row level security;
+alter table paiements enable row level security;
+create policy "allow_all" on prospects for all to anon using (true) with check (true);
+create policy "allow_all" on projets for all to anon using (true) with check (true);
+create policy "allow_all" on revenus for all to anon using (true) with check (true);
+create policy "allow_all" on paiements for all to anon using (true) with check (true);`;
+ 
+function SetupScreen({onConnected}){
+  const[url,setUrl]=useState('');const[key,setKey]=useState('');const[loading,setLoading]=useState(false);const[error,setError]=useState('');const[showSQL,setShowSQL]=useState(false);
+  const connect=async()=>{
+    if(!url.trim()||!key.trim()){setError('Remplis les deux champs.');return}
+    setLoading(true);setError('');
+    try{SB.init(url.trim(),key.trim());const ok=await SB.test();if(ok){saveCreds(url.trim(),key.trim());onConnected();}else setError('Connexion refusée. Vérifie que les tables existent (exécute le SQL ci-dessus) et que tes clés sont correctes.');}
+    catch(e){setError('Erreur: '+e.message);}
+    setLoading(false);
+  };
+  return(
+    <div style={{minHeight:'100vh',background:'var(--bg)',display:'flex',alignItems:'center',justifyContent:'center',padding:'14px 12px',paddingTop:40}}>
+      <div style={{maxWidth:620,width:'100%',animation:'fadeUp .4s ease'}}>
+        <div style={{textAlign:'center',marginBottom:20}}>
+          <div style={{fontSize:40,marginBottom:8}}>⚡</div>
+          <div style={{fontFamily:'var(--font-cond)',fontSize:20,fontWeight:800,color:'var(--cyan)',textTransform:'uppercase',letterSpacing:1}}>CRM Pro</div>
+          <div style={{marginTop:8,display:'inline-flex',alignItems:'center',gap:6,background:'var(--cyan-dim)',border:'1px solid var(--cyan)30',borderRadius:20,padding:'4px 12px',fontSize:11,color:'var(--cyan)'}}>🔗 Supabase requis</div>
+        </div>
+        <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--r2)',padding:16,marginBottom:14}}>
+          <div style={{fontFamily:'var(--font-cond)',fontWeight:700,fontSize:13,marginBottom:12,color:'var(--text)'}}>📋 3 étapes</div>
+          <div style={{display:'flex',gap:10,marginBottom:10,fontSize:12}}>
+            <div style={{width:24,height:24,borderRadius:'50%',background:'var(--cyan-dim)',border:'2px solid var(--cyan)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:800,color:'var(--cyan)',fontSize:11,flexShrink:0}}>1</div>
+            <div><div style={{fontWeight:600,fontSize:12}}>Créer Supabase</div><div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Va sur <a href="https://supabase.com" target="_blank" style={{color:'var(--cyan)',textDecoration:'underline'}}>supabase.com</a></div></div>
+          </div>
+          <div style={{display:'flex',gap:10,marginBottom:10,fontSize:12}}>
+            <div style={{width:24,height:24,borderRadius:'50%',background:'var(--gold-dim)',border:'2px solid var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:800,color:'var(--gold)',fontSize:11,flexShrink:0}}>2</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:600,fontSize:12}}>Exécuter le SQL</div>
+              <button onClick={()=>setShowSQL(s=>!s)} style={{marginTop:4,background:'var(--gold-dim)',color:'var(--gold)',border:'1px solid var(--gold)30',borderRadius:'var(--r)',padding:'4px 10px',fontSize:10,cursor:'pointer',fontWeight:600,fontFamily:'var(--font)'}}>{showSQL?'▲ Masquer':'▼ Voir SQL'}</button>
+              {showSQL&&<div style={{marginTop:6,position:'relative'}}><textarea readOnly value={SQL_SETUP} rows={6} style={{background:'var(--bg3)',color:'#34d399',fontSize:9,fontFamily:'var(--font-mono)',border:'1px solid var(--border)',borderRadius:'var(--r)',padding:8,lineHeight:1.4,width:'100%',resize:'none'}}/><button onClick={()=>navigator.clipboard.writeText(SQL_SETUP)} style={{position:'absolute',top:4,right:4,background:'var(--bg4)',color:'var(--text2)',border:'1px solid var(--border)',borderRadius:4,padding:'2px 6px',fontSize:9,cursor:'pointer',fontFamily:'var(--font)'}}>📋 Copier</button></div>}
+            </div>
+          </div>
+          <div style={{display:'flex',gap:10,fontSize:12}}>
+            <div style={{width:24,height:24,borderRadius:'50%',background:'var(--green-dim)',border:'2px solid var(--green)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:800,color:'var(--green)',fontSize:11,flexShrink:0}}>3</div>
+            <div><div style={{fontWeight:600,fontSize:12}}>Copier les clés</div><div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Settings → API → copie les clés</div></div>
+          </div>
+        </div>
+        <div style={{background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r2)',padding:16}}>
+          <div style={{fontFamily:'var(--font-cond)',fontWeight:700,fontSize:13,marginBottom:12}}>🔗 Tes clés</div>
+          <div style={{marginBottom:10}}><label style={{display:'block',fontSize:9,color:'var(--text3)',marginBottom:3,textTransform:'uppercase',letterSpacing:.5,fontFamily:'var(--font-cond)',fontWeight:600}}>Project URL *</label><input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://xxx.supabase.co" style={{padding:'8px 10px',fontSize:12}}/></div>
+          <div style={{marginBottom:12}}><label style={{display:'block',fontSize:9,color:'var(--text3)',marginBottom:3,textTransform:'uppercase',letterSpacing:.5,fontFamily:'var(--font-cond)',fontWeight:600}}>Anon Public Key *</label><input value={key} onChange={e=>setKey(e.target.value)} placeholder="eyJhbGc..." style={{padding:'8px 10px',fontSize:12}}/></div>
+          {error&&<div style={{background:'var(--red-dim)',color:'var(--red)',padding:'8px 10px',borderRadius:'var(--r)',fontSize:12,marginBottom:12,border:'1px solid var(--red)30'}}>❌ {error}</div>}
+          <button disabled={loading||!url.trim()||!key.trim()} onClick={connect} style={{width:'100%',padding:'10px',background:'var(--cyan)',color:'#000',border:'none',borderRadius:'var(--r)',fontSize:13,fontWeight:700,cursor:loading||!url.trim()||!key.trim()?'not-allowed':'pointer',fontFamily:'var(--font)',opacity:loading||!url.trim()||!key.trim()?0.5:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
+            {loading?<><span className="spin">⟳</span> Test...</>:'⚡ Connecter'}
+          </button>
+          <div style={{marginTop:8,fontSize:10,color:'var(--text3)',textAlign:'center',lineHeight:1.4}}>Clés stockées en local seulement</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+ 
+function SyncDot({syncing,err}){
+  if(err)return<span style={{fontSize:11,color:'var(--red)'}}>⚠ Erreur sync</span>;
+  if(syncing)return<span style={{fontSize:11,color:'var(--gold)',display:'inline-flex',alignItems:'center',gap:4}}><span className="spin">⟳</span> Sync...</span>;
+  return<span style={{fontSize:11,color:'var(--green)',display:'inline-flex',alignItems:'center',gap:5}}><span className="live"/> Cloud ✓</span>;
+}
+ 
+function App(){
+  const [tab,setTab]=useState("dashboard");
+  const [prospects,setProspects]=useState([]);
+  const [projets,setProjets]=useState([]);
+  const [revenus,setRevenus]=useState([]);
+  const [paiements,setPaiements]=useState([]);
+  const [toasts,setToasts]=useState([]);
+  const [phase,setPhase]=useState("init");
+  const [syncing,setSyncing]=useState(false);
+  const [syncErr,setSyncErr]=useState(false);
+  const [isMobile,setIsMobile]=useState(typeof window!=="undefined"&&window.innerWidth<768);
+  const [sideOpen,setSideOpen]=useState(typeof window!=="undefined"&&window.innerWidth>=768);
+  const [mobileMenuOpen,setMobileMenuOpen]=useState(false);
+  useEffect(()=>{const h=()=>{const m=window.innerWidth<768;setIsMobile(m);if(m){setSideOpen(false);setMobileMenuOpen(false);}};window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
+ 
+  const addToast=(msg,type="success")=>{const id=uid();setToasts(t=>[...t,{id,msg,type}]);setTimeout(()=>setToasts(t=>t.filter(x=>x.id!==id)),3500)};
+  useEffect(()=>{const c=getCreds();if(c){SB.init(c.u,c.k);setPhase("loading");}else setPhase("setup");},[]);
+  useEffect(()=>{
+    if(phase!=="loading")return;
+    Promise.all([SB.getAll("prospects"),SB.getAll("projets"),SB.getAll("revenus"),SB.getAll("paiements")])
+      .then(([p,pr,r,pai])=>{setProspects(p);setProjets(pr);setRevenus(r);setPaiements(pai);setPhase("app");})
+      .catch(()=>{addToast("❌ Erreur Supabase. Vérifiez vos clés.","error");setPhase("setup");});
+  },[phase]);
+ 
+  const impayesCount=paiements.filter(p=>p.statutPaiement==="impaye"||p.statutPaiement==="partiel").length;
+  const newProspects=prospects.filter(p=>p.statut==="nouveau").length;
+ 
+  const TABS=[
+    {id:"dashboard", label:"Vue Générale",    icon:"📊"},
+    {id:"prospects", label:"Prospects CRM",   icon:"🎯", badge:newProspects>0?newProspects:null},
+    {id:"projets",   label:"Projets",          icon:"💼"},
+    {id:"paiements", label:"Paiements",        icon:"💳", badge:impayesCount>0?impayesCount:null, badgeColor:"var(--red)"},
+    {id:"revenus",   label:"Revenus",          icon:"💰"},
+    {id:"messages",  label:"Messages",         icon:"💬"},
+    {id:"settings",  label:"Paramètres",       icon:"⚙️"},
+  ];
+ 
+  if(phase==="init")return null;
+  if(phase==="setup")return<SetupScreen onConnected={()=>setPhase("loading")}/>;
+  if(phase==="loading")return<div style={{height:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16,background:"var(--bg)"}}><span className="spin" style={{fontSize:36,color:"var(--cyan)"}}>⟳</span><div style={{fontFamily:"var(--font-cond)",fontSize:16,color:"var(--text3)"}}>Connexion à Supabase & chargement...</div></div>;
+  return(
+    <div style={{display:"flex",height:"100vh",background:"var(--bg)",overflow:"hidden"}}>
+      <Toast toasts={toasts}/>
+ 
+      {/* MOBILE MENU OVERLAY */}
+      {isMobile&&mobileMenuOpen&&<div onClick={()=>setMobileMenuOpen(false)} style={{position:"fixed",inset:0,background:"#000a",zIndex:300}}/>}
+      {isMobile&&mobileMenuOpen&&<div onClick={()=>setMobileMenuOpen(false)} style={{position:"fixed",inset:0,background:"#000000aa",zIndex:400}}/>}
+      {/* SIDEBAR */}
+      <div style={{width:sideOpen?232:64,background:"var(--bg2)",borderRight:"1px solid var(--border)",display:"flex",flexDirection:"column",transition:"width .2s ease",overflow:"hidden",flexShrink:0,position:isMobile?"fixed":"relative",zIndex:isMobile?400:1,height:isMobile?"100vh":"auto",left:0,top:0,transform:isMobile&&!mobileMenuOpen?"translateX(-100%)":"translateX(0)"}}>
+        <div style={{padding:sideOpen?"20px 18px 14px":"16px 0",borderBottom:"1px solid var(--border)",textAlign:sideOpen?"left":"center"}}>
+          {sideOpen?(
+            <div>
+              <div style={{fontFamily:"var(--font-cond)",fontWeight:800,fontSize:14,letterSpacing:.5,textTransform:"uppercase"}}>Oumate Razakou</div>
+              <div style={{fontSize:10,color:"var(--cyan)",marginTop:4,fontFamily:"var(--font-mono)",letterSpacing:1}}>IA · WEB · STREAMING</div>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:8}}><span className="live"/><span style={{fontSize:10,color:"var(--text3)"}}>Lomé, Togo</span></div>
+            </div>
+          ):<div style={{fontFamily:"var(--font-cond)",fontWeight:800,fontSize:15,color:"var(--cyan)"}}>OR</div>}
+        </div>
+        <nav style={{flex:1,padding:"10px 6px",overflowY:"auto"}}>
+          {TABS.map(t=>{
+            const active=tab===t.id;
+            return(
+              <div key={t.id} onClick={()=>{setTab(t.id);if(isMobile){setMobileMenuOpen(false);setSideOpen(false);}}} style={{display:"flex",alignItems:"center",gap:10,padding:sideOpen?"10px 14px":"10px 0",justifyContent:sideOpen?"flex-start":"center",cursor:"pointer",borderRadius:"var(--r)",margin:"2px 2px",background:active?"var(--cyan-dim)":"transparent",color:active?"var(--cyan)":"var(--text3)",fontWeight:active?700:400,borderLeft:active&&sideOpen?"3px solid var(--cyan)":"3px solid transparent",transition:"all .15s",whiteSpace:"nowrap"}}>
+                <span style={{fontSize:16,flexShrink:0}}>{t.icon}</span>
+                {sideOpen&&<span style={{fontSize:13,flex:1}}>{t.label}</span>}
+                {sideOpen&&t.badge&&<span style={{background:t.badgeColor||"var(--red)",color:"#fff",borderRadius:10,fontSize:10,fontWeight:700,padding:"1px 6px",flexShrink:0}}>{t.badge}</span>}
+              </div>
+            );
+          })}
+        </nav>
+        <div style={{padding:"8px 6px",borderTop:"1px solid var(--border)"}}>
+          {sideOpen&&<div style={{padding:"6px 14px",marginBottom:4}}><a href={SITE_URL} target="_blank" style={{fontSize:10,color:"var(--cyan)",fontFamily:"var(--font-mono)",display:"block",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>🌐 {SITE_URL.replace("https://","")}</a></div>}
+          <div onClick={()=>setSideOpen(!sideOpen)} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",cursor:"pointer",color:"var(--text3)",borderRadius:"var(--r)",justifyContent:sideOpen?"flex-start":"center"}}
+            onMouseEnter={e=>e.currentTarget.style.background="var(--bg3)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+            <span style={{fontSize:12}}>{sideOpen?"◀":"▶"}</span>
+            {sideOpen&&<span style={{fontSize:11}}>Réduire</span>}
+          </div>
+        </div>
+      </div>
+ 
+      {/* MAIN */}
+      <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        <div style={{padding:isMobile?"8px 12px":"14px 24px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between",background:"var(--bg2)",flexShrink:0,flexWrap:isMobile?"wrap":"nowrap",gap:isMobile?6:12}}>
+          {isMobile&&<button onClick={()=>setMobileMenuOpen(!mobileMenuOpen)} style={{background:"var(--bg3)",color:"var(--text)",border:"1px solid var(--border)",borderRadius:"var(--r)",padding:"6px 8px",cursor:"pointer",fontSize:14,fontFamily:"var(--font)",fontWeight:600}}>☰</button>}
+          <span style={{fontFamily:"var(--font-cond)",fontSize:isMobile?14:18,fontWeight:700,letterSpacing:.3}}>{TABS.find(t=>t.id===tab)?.icon} {TABS.find(t=>t.id===tab)?.label}</span>
+          <div style={{display:"flex",gap:isMobile?6:12,alignItems:"center",fontSize:isMobile?10:11,flexWrap:"wrap"}}>
+            <SyncDot syncing={syncing} err={syncErr}/>
+            {!isMobile&&<span style={{color:"var(--text3)"}}>{new Date().toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})}</span>}
+            {!isMobile&&<div style={{width:1,height:18,background:"var(--border)"}}/>}
+            {!isMobile&&<span style={{color:"var(--text3)"}}>{prospects.length} prospects · {paiements.length} paiements</span>}
+            {isMobile&&<span style={{color:"var(--text3)",fontSize:9}}>{prospects.length} prospects</span>}
+          </div>
+        </div>
+        <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:isMobile?12:24}}>
+          {tab==="dashboard" &&<TabDashboard prospects={prospects} projets={projets} revenus={revenus} paiements={paiements} setTab={setTab} isMobile={isMobile}/>}
+          {tab==="prospects"&&<TabProspects prospects={prospects} setProspects={setProspects} addToast={addToast} setSyncing={setSyncing} setSyncErr={setSyncErr}/>}
+          {tab==="projets"  &&<TabProjets projets={projets} setProjets={setProjets} addToast={addToast} paiements={paiements} setPaiements={setPaiements} setSyncing={setSyncing} setSyncErr={setSyncErr}/>}
+          {tab==="paiements"&&<TabPaiements paiements={paiements} setPaiements={setPaiements} addToast={addToast} setSyncing={setSyncing} setSyncErr={setSyncErr} isMobile={isMobile}/>}
+          {tab==="revenus"  &&<TabRevenus revenus={revenus} setRevenus={setRevenus} addToast={addToast} setSyncing={setSyncing} setSyncErr={setSyncErr}/>}
+          {tab==="messages" &&<TabMessages prospects={prospects} setProspects={setProspects}/>}
+          {tab==="settings" &&<TabSettings addToast={addToast}/>}
+        </div>
+      </div>
+    </div>
+  );
+}
+ 
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
+ 
