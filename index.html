@@ -156,7 +156,22 @@ function genMsg(p){
   const hasSite=p.siteWeb&&p.siteWebUrl;
   const typeLabel=TYPES[p.type]?.label?.toLowerCase()||"établissement";
   const etoiles=p.etoiles>0?` ${p.etoiles}★`:"";
- 
+  const mainService=services[0]; // Service principal pour adapter l'intro
+
+  // Intro adaptée selon le service principal
+  let intro;
+  if(mainService==="site_web"){
+    intro=hasSite
+      ?`Après avoir visité votre site (${p.siteWebUrl}), j'ai identifié des opportunités d'amélioration importantes pour votre ${typeLabel}, et c'est pourquoi je me permets de vous contacter.`
+      :`Votre ${typeLabel} *${p.nom}*${etoiles} jouit d'une excellente réputation à Lomé, mais je remarque qu'il n'a pas encore de présence en ligne — c'est précisément pour cela que je me permets de vous contacter afin de vous proposer un site web professionnel.`;
+  }else if(mainService==="streaming"){
+    intro=`Votre ${typeLabel} *${p.nom}*${etoiles} mérite d'offrir à ses clients une expérience de divertissement premium à Lomé — c'est pourquoi je me permets de vous contacter pour nos solutions de streaming sans abonnement récurrent.`;
+  }else if(mainService==="agent_ia"){
+    intro=`Votre ${typeLabel} *${p.nom}*${etoiles} pourrait bénéficier d'une automatisation intelligente pour optimiser ses opérations quotidiennes à Lomé — c'est précisément pour cela que je me permets de vous contacter afin de vous présenter nos agents IA sur mesure.`;
+  }else{
+    intro=`Votre ${typeLabel} *${p.nom}*${etoiles} a une excellente réputation à Lomé — c'est précisément pourquoi je me permets de vous contacter pour discuter de solutions personnalisées adaptées à vos besoins.`;
+  }
+
   // ── Bloc streaming ──
   const blockStreaming=`🎬 *Logiciel zack.net.M v3.0* — Netflix, Prime Video & Disney+ sur tous vos téléviseurs :
 ✅ Licence unique — zéro abonnement mensuel récurrent
@@ -165,7 +180,7 @@ function genMsg(p){
 ✅ Économie estimée : +3 300 000 FCFA sur 15 ans
 ✅ Support local + mises à jour garanties
 → *Démonstration gratuite de 20 min dans vos locaux*`;
- 
+
   // ── Bloc site web ──
   const menuLine=(p.type==="restaurant"||p.type==="bar")?"\n🍽️ *Menu digital* — consultable sur smartphone, commandes en ligne":"";
   const blockSiteWeb=hasSite
@@ -181,7 +196,7 @@ function genMsg(p){
 ✅ Référencement Google local (SEO)
 ✅ 100% mobile
 → *3 à 5× plus de prises de contact en 3 mois*`;
- 
+
   // ── Bloc agent IA ──
   const blockIA=`🤖 *Agent IA sur mesure* — votre collaborateur numérique 24h/24 :
 ✅ Réponses WhatsApp & Email en moins de 30 secondes
@@ -189,21 +204,17 @@ function genMsg(p){
 ✅ Rapports quotidiens envoyés sur votre téléphone
 ✅ 4 à 6h de travail répétitif économisé par jour
 → *Entretien découverte gratuit de 30 min*`;
- 
+
   const blocks=[];
   if(services.includes("streaming"))blocks.push(blockStreaming);
   if(services.includes("site_web"))blocks.push(blockSiteWeb);
   if(services.includes("agent_ia"))blocks.push(blockIA);
   if(services.includes("autre"))blocks.push(`📦 *Service personnalisé* — discutons de vos besoins spécifiques.`);
- 
-  const intro=hasSite&&services.includes("site_web")
-    ?`J'ai visité votre site (${p.siteWebUrl}) et j'ai identifié des opportunités d'amélioration importantes pour votre ${typeLabel}.`
-    :`Votre ${typeLabel} *${p.nom}*${etoiles} a une excellente réputation à Lomé — c'est précisément pourquoi je me permets de vous contacter.`;
- 
+
   const multi=blocks.length>1;
   const offreLabel=multi?`\n\n🎁 *Offre combinée disponible* — plusieurs services ensemble = tarif préférentiel négocié.`:"";
- 
-  return `Bonjour,\n\nJe me présente : Oumate Razakou, développeur de solutions numériques basé à Lomé (Togo).\n\n${intro}\n\n${multi?"Je vous propose aujourd'hui *"+blocks.length+" solutions complémentaires* :":""}\n\n${blocks.map((b,i)=>multi?`— PROPOSITION ${i+1} —\n${b}`:b).join("\n\n")}${offreLabel}\n\n🌐 Portfolio : ${SITE_URL}\n📲 WhatsApp : ${WHATSAPP}\n\nDans l'attente d'un échange avec vous,\n\nBien cordialement,\n*Oumate Razakou*\nDéveloppeur IA & Solutions Numériques — Lomé, Togo`;
+
+  return `Bonjour Madame, Monsieur,\n\nJe vous prie de bien vouloir m'excuser pour ce contact direct. Je me présente : Oumate Razakou, développeur de solutions numériques basé à Lomé (Togo).\n\n${intro}\n\n${multi?"Je vous propose aujourd'hui *"+blocks.length+" solutions complémentaires* :":""}\n\n${blocks.map((b,i)=>multi?`— PROPOSITION ${i+1} —\n${b}`:b).join("\n\n")}${offreLabel}\n\n🌐 Portfolio : ${SITE_URL}\n📲 WhatsApp : ${WHATSAPP}\n\nDans l'attente d'un échange avec vous,\n\nBien cordialement,\n*Oumate Razakou*\nDéveloppeur IA & Solutions Numériques — Lomé, Togo`;
 }
  
 // ═══════════════════════════════════════
