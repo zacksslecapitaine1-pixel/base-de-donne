@@ -1584,10 +1584,10 @@ function SetupScreen({onConnected}){
   );
 }
  
-function SyncDot({syncing,err}){
+function SyncDot({syncing,err,onRefresh}){
   if(err)return<span style={{fontSize:11,color:'var(--red)'}}>⚠ Erreur sync</span>;
   if(syncing)return<span style={{fontSize:11,color:'var(--gold)',display:'inline-flex',alignItems:'center',gap:4}}><span className="spin">⟳</span> Sync...</span>;
-  return<span style={{fontSize:11,color:'var(--green)',display:'inline-flex',alignItems:'center',gap:5}}><span className="live"/> Cloud ✓</span>;
+  return<span style={{fontSize:11,color:'var(--green)',display:'inline-flex',alignItems:'center',gap:5}}><span className="live"/> Cloud ✓ <button onClick={onRefresh} style={{background:'none',border:'none',color:'var(--cyan)',cursor:'pointer',fontSize:10,padding:0,textDecoration:'underline'}}>🔄</button></span>;
 }
  
 function App(){
@@ -1606,6 +1606,23 @@ function App(){
   useEffect(()=>{const h=()=>{const m=window.innerWidth<768;setIsMobile(m);if(m){setSideOpen(false);setMobileMenuOpen(false);}};window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
  
   const addToast=(msg,type="success")=>{const id=uid();setToasts(t=>[...t,{id,msg,type}]);setTimeout(()=>setToasts(t=>t.filter(x=>x.id!==id)),3500)};
+  const refreshData=async()=>{
+    setSyncing(true);
+    setSyncErr(false);
+    try{
+      const [p,pr,r,pai]=await Promise.all([SB.getAll("prospects"),SB.getAll("projets"),SB.getAll("revenus"),SB.getAll("paiements")]);
+      setProspects(p);
+      setProjets(pr);
+      setRevenus(r);
+      setPaiements(pai);
+      addToast("🔄 Données rechargées depuis le cloud");
+    }catch(e){
+      setSyncErr(true);
+      addToast("❌ Erreur lors du rechargement","error");
+    }finally{
+      setTimeout(()=>setSyncing(false),700);
+    }
+  };
   useEffect(()=>{const c=getCreds();if(c){SB.init(c.u,c.k);setPhase("loading");}else setPhase("setup");},[]);
   useEffect(()=>{
     if(phase!=="loading")return;
@@ -1676,7 +1693,7 @@ function App(){
           {isMobile&&<button onClick={()=>setMobileMenuOpen(!mobileMenuOpen)} style={{background:"var(--bg3)",color:"var(--text)",border:"1px solid var(--border)",borderRadius:"var(--r)",padding:"6px 8px",cursor:"pointer",fontSize:14,fontFamily:"var(--font)",fontWeight:600}}>☰</button>}
           <span style={{fontFamily:"var(--font-cond)",fontSize:isMobile?14:18,fontWeight:700,letterSpacing:.3}}>{TABS.find(t=>t.id===tab)?.icon} {TABS.find(t=>t.id===tab)?.label}</span>
           <div style={{display:"flex",gap:isMobile?6:12,alignItems:"center",fontSize:isMobile?10:11,flexWrap:"wrap"}}>
-            <SyncDot syncing={syncing} err={syncErr}/>
+            <SyncDot syncing={syncing} err={syncErr} onRefresh={refreshData}/>
             {!isMobile&&<span style={{color:"var(--text3)"}}>{new Date().toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})}</span>}
             {!isMobile&&<div style={{width:1,height:18,background:"var(--border)"}}/>}
             {!isMobile&&<span style={{color:"var(--text3)"}}>{prospects.length} prospects · {paiements.length} paiements</span>}
